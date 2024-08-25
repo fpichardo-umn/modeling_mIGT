@@ -1,0 +1,2986 @@
+---
+title: "Test_ComPsy"
+author: "Felix Pichardo"
+date: "2024-07-03"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load packages
+library(plyr)   #for revalue
+library(dplyr)  #for %>%
+library(ggplot2)
+library(gridExtra)
+library(grid)   #for textGrob
+library(kableExtra) #for knitr tables
+library(tidyr)
+library(here)
+library(foreign)
+library(bayesplot)
+library(posterior)
+
+# Directories
+PROJ_DIR   = file.path(here::here())
+DATA_DIR   = file.path(PROJ_DIR, "Data")
+MODELS_DIR = file.path(PROJ_DIR, "models")
+
+# Load Data
+## Trial-level data
+wave1.sav.file = file.path(DATA_DIR, "modigt_data_Wave1.sav")
+wave1.raw      = read.spss(wave1.sav.file,to.data.frame = TRUE)
+```
+
+# Test Single Fit: 4 Param
+```{r}
+single.fit.model = file.path(MODELS_DIR, "igt_mod_ev_single.rds")
+
+#sample_sub = sample(unique(wave1.raw$sid), 1)
+sample_sub = "202903"
+#sample_sub = "201401" #sample sub 2
+sample_sub = "202111"
+
+sample_df = wave1.raw %>%
+  filter(sid == sample_sub)
+```
+
+## Prep Single Fit
+```{r}
+data_list = list(
+  T        = nrow(sample_df),
+  choice   = as.numeric(sample_df$v_response) - 1,
+  shown    = sample_df$v_targetdeck,
+  outcome  = sample_df$v_netchange
+)
+
+stanmodel_arg = readRDS(single.fit.model)
+```
+
+
+## Fit
+```{r}
+options(mc.cores = parallel::detectCores())
+
+n_warmup = 2000
+n_iter = 20000
+n_chains = 4
+
+# Initialization
+init_fun <- function() {
+  list(
+    update_pr = rnorm(1, 0, 0.1),
+    wgt_pun_pr = rnorm(1, 0, 0.1),
+    wgt_rew_pr = rnorm(1, 0, 0.1),
+    con_pr = rlnorm(1, -3, 0.1)  # Ensure positive values for lognormal
+  )
+}
+
+fit_sing <- rstan::sampling(object  = stanmodel_arg,
+                             data    = data_list,
+                             init    = "random",
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = 0.99,
+                                            stepsize      = 1,
+                                            max_treedepth = 15))
+```
+
+## Diagnostics
+
+### Divergence Check
+```{r}
+sampler_params <- rstan::get_sampler_params(fit_sing, inc_warmup = FALSE)
+
+# Count divergences
+divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
+div_rate = divergences/((n_iter - n_warmup) * n_chains)
+
+cat("Number of divergent transitions:", divergences, "\n")
+cat("Rate of divergent transitions:", div_rate, "\n")
+
+acceptable = div_rate < 0.001
+borderline = div_rate < 0.01
+problematic = div_rate > 0.01
+
+if (acceptable){
+  cat("Rate of divergent acceptable: rate < 0.001 \n")
+} else if (borderline){
+  cat("Rate of divergent borderline: rate < 0.01 \n")
+} else {
+  cat("Rate of divergent problematic: rate > 0.01 \n")
+}
+
+# If there are divergences, highlight them
+if (divergences > 0) {
+  for (chain in 1:length(sampler_params)){
+    cat("Number of divergent transitions for chain ", chain, ":", sum(sampler_params[[chain]][,'divergent__']), "\n")
+  }
+}
+
+# NUTS Energy Diagnostic
+if ("energy__" %in% colnames(sampler_params[[1]])) {
+  energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  # should be roughly bell-shaped
+  # If you see a very skewed or multimodal distribution, it might indicate sampling difficulties
+}
+```
+
+
+
+### Traceplots
+```{r}
+mcmc_trace(fit_sing, head(names(fit_sing), 12), iter1 = n_warmup + 1)  +
+  ggtitle("Trace Plots (should resemble white noise)")# Should be white noise (hairy caterpillars with out any obvious trends or patterns)
+```
+
+### Sample to display
+```{r}
+start_idx = 1
+end_idx = n_subs
+num_of_params_to_view = num_params*2 # _pr versions too
+num_to_view = 10
+n_size = length(names(fit_sing))
+params = names(fit_sing)[c(1:9, (n_size-4):n_size)]
+```
+
+
+### Display chain density plots (10 per page)
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should overlap across chains
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens_chains(fit_sing, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- 10
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain"))
+}
+```
+
+### Overall Posterior Density Plots
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should resemble expected dist
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens(fit_sing, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots"))
+}
+```
+
+
+### R-hat
+```{r}
+# <1.1, closer to 1 is better; over 1.1 is convergence issues
+rhat_values <- bayesplot::rhat(fit_sing, pars = names(fit_sing))
+print(sample(rhat_values, as.integer(length(rhat_values)*0.1)))
+mcmc_rhat(rhat_values[rhat_values > quantile(rhat_values, .75)]) +
+  ggtitle("Q3 R-hat Values (should be < 1.1)")
+```
+
+### Effective Sample Size
+```{r}
+print((n_iter - n_warmup) * n_chains)
+# at least a few 100, 10K for 95% HDI
+# neff > 0.1 (10% of total samples)
+# Higher is better - as close to 1 as possible
+n_eff <- neff_ratio(fit_sing, pars = names(fit_sing))
+print(sample(n_eff, 8) * (n_iter - n_warmup) * n_chains)
+print(sample(n_eff, 8))
+print(sum(n_eff * (n_iter - n_warmup) * n_chains < 400)) # if any, should do more iterations
+#mcmc_neff(head(n_eff, 8)) +
+#  ggtitle("Effective Sample Size Ratio")
+hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
+```
+
+### Monte Carlo Standard Error
+```{r}
+#head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+mcse_values <- apply(as_draws_matrix(fit_sing), 2, mcse_mean)
+posterior_sd <- apply(as_draws_matrix(fit_sing), 2, sd)
+mcse_ratio <- mcse_values / posterior_sd
+
+print(data.frame(MCSE = mcse_values, 
+                 Posterior_SD = posterior_sd, 
+                 MCSE_Ratio = mcse_ratio)[sample(length(mcse_values), 8),])
+
+print(sample(mcse_values, 8))
+print(sample(mcse_ratio, 8))
+hist(mcse_values, main = "Monte Carlo Standard Error (lower is better)", xlab = "MCSE")
+hist(mcse_ratio, main = "MCSE / Posterior SD Ratio", 
+     xlab = "Ratio (should be < 0.1)")
+
+# Less than 10% of the param's post std
+params_to_check <- names(which(mcse_ratio > 0.1))
+if(length(params_to_check) > 0) {
+  cat("Parameters with MCSE > 10% of posterior SD:", 
+      paste(params_to_check, collapse = ", "), "\n")
+} else {
+  cat("No Parameters with MCSE > 10% of posterior SD")
+}
+
+```
+
+### Autocorrelation
+```{r}
+mcmc_acf(fit_sing, pars = head(names(fit_sing), 8)) +
+  ggtitle("Autocorrelation (Should decay quickly)")
+
+# High AC at high lags suggests poor mixing
+```
+
+### Parallel Coordinates Plot
+
+```{r}
+mcmc_parcoord(fit_sing, pars = sample(names(fit_sing), as.integer(length(names(fit_sing))*0.1))) +
+  ggtitle("Parallel Coordinates Plot")
+
+# Should be a mix of criss-crossing lines without any strong patterns
+# If lines are very tangled or show clear patterns, might indicate high correlation between params
+```
+
+### Pairs Plot
+```{r}
+pairs(fit_sing, pars = sample(names(fit_sing), 8)) # Should not have red dots (divergences)
+```
+
+
+## Save fit
+```{r}
+saveRDS(fit_sing, file = file.path(DATA_DIR, "sing_fit_output.rds"))
+```
+
+
+
+# Test Single Fit: 3 Param
+```{r}
+single.fit.model = file.path(MODELS_DIR, "igt_mod_ev_single_3_param.rds")
+
+#sample_sub = sample(unique(wave1.raw$sid), 1)
+sample_sub = "202903"
+#sample_sub = "201401" #sample sub 2
+sample_sub = "202111"
+
+sample_df = wave1.raw %>%
+  filter(sid == sample_sub)
+```
+
+## Prep Single Fit
+```{r}
+data_list = list(
+  T        = nrow(sample_df),
+  choice   = as.numeric(sample_df$v_response) - 1,
+  shown    = sample_df$v_targetdeck,
+  outcome  = sample_df$v_netchange
+)
+
+stanmodel_arg = readRDS(single.fit.model)
+```
+
+
+## Fit
+```{r}
+# pars: This argument specifies which parameters you want to monitor and save from the MCMC sampling. If you don't specify this, Stan will save all parameters by default. By specifying only the parameters you're interested in, you can reduce memory usage and processing time
+
+# thin: Thinning is the practice of only keeping every nth sample from the MCMC chain. For example, if thin = 2, you would keep every second sample. The default of 1 means you keep all samples. Thinning can be used to reduce autocorrelation in the samples and save memory, but it's generally not recommended unless you have specific reasons to do so (like memory constraints).
+
+# control: This is a list of additional arguments to control the behavior of the sampler
+#   adapt_delta: This is the target average proposal acceptance probability during Stan's adaptation period. Higher values (closer to 1) mean the step size will be smaller, which can help avoid divergent transitions but may require more iterations.
+#   stepsize: This is the initial step size for the sampler. Stan will adapt this during warmup, so the initial value often doesn't matter much
+#   max_treedepth: This is the maximum depth of the trees that the No-U-Turn Sampler (NUTS, the default sampler in Stan) will evaluate during each iteration. Increasing this allows the sampler to move in bigger steps, potentially exploring the posterior more efficiently, but at the cost of more computation per iteration
+```
+
+
+```{r}
+n_warmup = 2000
+n_iter = 20000
+n_chains = 4
+
+# Initialization
+init_fun <- function() {
+  list(
+    update_pr = rnorm(1, 0, 0.1),
+    wgt_pr = rnorm(1, 0, 0.1),
+    con_pr = rlnorm(1, -3, 0.1)  # Ensure positive values for lognormal
+  )
+}
+
+fit <- rstan::sampling(object  = stanmodel_arg,
+                             data    = data_list,
+                             init    = init_fun,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = 0.99,
+                                            stepsize      = 1,
+                                            max_treedepth = 15))
+```
+
+## Diagnostics
+```{r}
+mcmc_trace(fit, head(names(fit), 8), iter1 = n_warmup + 1)
+```
+
+```{r}
+# Create a list to store the plots
+plot_list <- list()
+
+# Generate plots for the first 8 parameters
+for (param in head(names(fit), 8)){
+  plot <- mcmc_dens_chains(fit, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Arrange and display all plots in a grid
+do.call(grid.arrange, c(plot_list, ncol = 2))
+```
+
+```{r}
+# Create a list to store the plots
+plot_list <- list()
+
+# Generate plots for the first 8 parameters
+for (param in head(names(fit), 8)){
+  plot <- mcmc_dens(fit, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Arrange and display all plots in a grid
+do.call(grid.arrange, c(plot_list, ncol = 2))
+```
+
+```{r}
+bayesplot::rhat(fit, head(names(fit), 8))
+```
+
+```{r}
+print((n_iter - n_warmup) * n_chains)
+neff_ratio(fit, head(names(fit), 8)) * (n_iter - n_warmup) * n_chains
+```
+
+```{r}
+head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+```
+
+```{r}
+pairs(fit, pars = head(names(fit), 8))
+```
+
+
+
+# Test nH Group Fit: 4 Param
+```{r}
+group.fit.model = file.path(MODELS_DIR, "igt_mod_ev_group.rds")
+#group.fit.model = file.path(MODELS_DIR, "igt_mod_ev_group_debug.rds")
+
+sample_df = wave1.raw
+```
+
+## Prep Group (non-H) Fit
+```{r}
+num_params = 4
+
+if (grepl('debug', group.fit.model) > 0){
+  # If this is a debug script
+  n_trials = 100
+  n_subs = 100
+} else {
+  n_trials = 100
+  n_subs = 50
+}
+
+trials_by_sub = sample_df %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n())
+
+valid_subids = trials_by_sub$sid[trials_by_sub$sub_trials > n_trials][1:n_subs]
+
+if (n_trials < max(trials_by_sub$sub_trials)){
+  trials_by_sub = sample_df %>%
+    filter(sid %in% valid_subids) %>%
+    group_by(sid) %>%
+    summarize(sub_trials = n_trials) %>%
+    arrange(sid) %>%
+    select(sub_trials) %>%
+    unlist() %>%
+    unname()
+  
+  response_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_response)  %>% 
+    mutate(v_response = as.numeric(v_response) - 1) %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid)) %>%
+    select(paste0("v_response.", 1:n_trials))
+  
+  shown_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_targetdeck)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid)) %>%
+    select(paste0("v_targetdeck.", 1:n_trials))
+  
+  outcome_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_netchange)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid)) %>%
+    select(paste0("v_netchange.", 1:n_trials))
+  
+} else {
+  # Full dataset
+  trials_by_sub = sample_df %>%
+    filter(sid %in% valid_subids) %>%
+    group_by(sid) %>%
+    summarize(sub_trials = n()) %>%
+    arrange(sid) %>%
+    select(sub_trials) %>%
+    unlist() %>%
+    unname()
+  
+  response_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_response)  %>% 
+    mutate(v_response = as.numeric(v_response) - 1) %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid))
+  
+  shown_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_targetdeck)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid))
+  
+  outcome_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_netchange)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid))
+}
+
+num_valid_sids = length(valid_subids)
+
+data_list = list(
+  N        = num_valid_sids,
+  T        = max(trials_by_sub),
+  Tsubj    = trials_by_sub, #[N]
+  choice   = response_mat, #[N, T]
+  shown    = shown_mat, #[N, T]
+  outcome  = outcome_mat #[N, T]
+)
+
+# Load precompiled model
+stanmodel_arg = readRDS(group.fit.model)
+```
+
+
+## Fit
+```{r}
+options(mc.cores = parallel::detectCores())
+
+#n_warmup = 3000
+#n_iter = 5000
+#n_chains = 1
+
+if (grepl('debug', group.fit.model) > 0){
+  # If this is a debug script
+  n_warmup = 10
+  n_iter = 20
+  n_chains = 1
+} else {
+  n_warmup = 1000
+  n_iter = 10000
+  n_chains = 3
+}
+
+# Initialization
+
+init_fun <- function() {
+  list(
+    update_pr = rnorm(num_valid_sids, 0, 10),
+    wgt_pun_pr = rnorm(num_valid_sids, 0, 10),
+    wgt_rew_pr = rnorm(num_valid_sids, 0, 10),
+    con_pr = rlnorm(num_valid_sids, -3, 1)  # Ensure positive values for lognormal
+  )
+}
+
+fit_grp_nh <- rstan::sampling(object  = stanmodel_arg,
+                             data    = data_list,
+                             init    = "random",
+                             init_r  = 0.1,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = 0.9,
+                                            stepsize      = 1,
+                                            max_treedepth = 12))
+
+```
+
+## Save fit
+```{r}
+fit_output_file = sub('/models/', '/data/', paste0(tools::file_path_sans_ext(group.fit.model), "_fit_output.rds"))
+saveRDS(fit_grp_nh, file = fit_output_file)
+```
+
+
+
+## Diagnostics
+
+### Divergence Check
+```{r}
+sampler_params <- rstan::get_sampler_params(fit_grp_nh, inc_warmup = FALSE)
+
+# Count divergences
+divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
+div_rate = divergences/((n_iter - n_warmup) * n_chains)
+
+cat("Number of divergent transitions:", divergences, "\n")
+cat("Rate of divergent transitions:", div_rate, "\n")
+
+acceptable = div_rate < 0.001
+borderline = div_rate < 0.01
+problematic = div_rate > 0.01
+
+if (acceptable){
+  cat("Rate of divergent acceptable: rate < 0.001 \n")
+} else if (borderline){
+  cat("Rate of divergent borderline: rate < 0.01 \n")
+} else {
+  cat("Rate of divergent problematic: rate > 0.01 \n")
+}
+
+# If there are divergences, highlight them
+if (divergences > 0) {
+  for (chain in 1:length(sampler_params)){
+    cat("Number of divergent transitions for chain ", chain, ":", sum(sampler_params[[chain]][,'divergent__']), "\n")
+  }
+}
+
+# NUTS Energy Diagnostic
+if ("energy__" %in% colnames(sampler_params[[1]])) {
+  energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  # should be roughly bell-shaped
+  # If you see a very skewed or multimodal distribution, it might indicate sampling difficulties
+}
+```
+
+
+
+### Traceplots
+```{r}
+mcmc_trace(fit_grp_nh, sample(names(fit_grp_nh)[1:(num_of_params_to_view*n_subs)], 12), iter1 = n_warmup + 1)  +
+  ggtitle("Trace Plots (should resemble white noise)")# Should be white noise (hairy caterpillars with out any obvious trends or patterns)
+```
+
+### Sample to display
+```{r}
+start_idx = 1
+end_idx = n_subs
+num_of_params_to_view = num_params*2 # _pr versions too
+num_to_view = 5
+params = vector(mode = "list", length = num_of_params_to_view)
+sample_idx = sample(1:n_subs, num_to_view)
+
+for (parm_num in 1:num_of_params_to_view){
+  param_vals = names(fit_grp_nh)[start_idx:end_idx]
+  params[[parm_num]] = param_vals[sample_idx]
+  start_idx = end_idx + 1
+  end_idx = end_idx + n_subs
+}
+
+params = c(unlist(params), "total_log_lik")
+```
+
+
+### Display chain density plots (10 per page)
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should overlap across chains
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens_chains(fit_grp_nh, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- 10
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain"))
+}
+```
+
+### Overall Posterior Density Plots
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should resemble expected dist
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens(fit_grp_nh, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots"))
+}
+```
+
+
+### R-hat
+```{r}
+# <1.1, closer to 1 is better; over 1.1 is convergence issues
+rhat_values <- bayesplot::rhat(fit_grp_nh, pars = names(fit_grp_nh))
+print(sample(rhat_values, as.integer(length(rhat_values)*0.1)))
+non_na_rhat = rhat_values[!is.na(rhat_values)]
+mcmc_rhat(non_na_rhat[non_na_rhat > quantile(non_na_rhat, .75)]) +
+  ggtitle("Q3 R-hat Values (should be < 1.1)")
+```
+
+### Effective Sample Size
+```{r}
+print((n_iter - n_warmup) * n_chains)
+# at least a few 100, 10K for 95% HDI
+# neff > 0.1 (10% of total samples)
+# Higher is better - as close to 1 as possible
+n_eff <- neff_ratio(fit_grp_nh, pars = names(fit_grp_nh))
+print(sample(n_eff, 8) * (n_iter - n_warmup) * n_chains)
+print(sample(n_eff, 8))
+print(sum(n_eff * (n_iter - n_warmup) * n_chains < 400)) # if any, should do more iterations
+#mcmc_neff(head(n_eff, 8)) +
+#  ggtitle("Effective Sample Size Ratio")
+hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
+```
+
+### Monte Carlo Standard Error
+```{r}
+#head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+mcse_values <- apply(as_draws_matrix(fit_grp_nh), 2, mcse_mean)
+posterior_sd <- apply(as_draws_matrix(fit_grp_nh), 2, sd)
+mcse_ratio <- mcse_values / posterior_sd
+
+print(data.frame(MCSE = mcse_values, 
+                      Posterior_SD = posterior_sd, 
+                      MCSE_Ratio = mcse_ratio)[sample(length(mcse_values), 8),])
+
+print(sample(mcse_values, 8))
+print(sample(mcse_ratio, 8))
+hist(mcse_values, main = "Monte Carlo Standard Error (lower is better)", xlab = "MCSE")
+hist(mcse_ratio, main = "MCSE / Posterior SD Ratio", 
+     xlab = "Ratio (should be < 0.1)")
+
+# Less than 10% of the param's post std
+params_to_check <- names(which(mcse_ratio > 0.1))
+if(length(params_to_check) > 0) {
+  cat("Parameters with MCSE > 10% of posterior SD:", 
+      paste(params_to_check, collapse = ", "), "\n")
+} else {
+  cat("No Parameters with MCSE > 10% of posterior SD")
+}
+
+```
+
+### Autocorrelation
+```{r}
+mcmc_acf(fit_grp_nh, pars = head(names(fit_grp_nh), 8)) +
+  ggtitle("Autocorrelation (Should decay quickly)")
+
+# High AC at high lags suggests poor mixing
+```
+
+### Parallel Coordinates Plot
+
+```{r}
+mcmc_parcoord(fit_grp_nh, pars = sample(names(fit_grp_nh), as.integer(length(names(fit_grp_nh))*0.1))) +
+  ggtitle("Parallel Coordinates Plot")
+
+# Should be a mix of criss-crossing lines without any strong patterns
+# If lines are very tangled or show clear patterns, might indicate high correlation between params
+```
+
+### Pairs Plot
+```{r}
+pairs(fit_grp_nh, pars = sample(names(fit_grp_nh), 8)) # Should not have red dots (divergences)
+```
+
+
+# Test Group (non-H) Fit: 3 Param
+```{r}
+group.fit.model = file.path(MODELS_DIR, "igt_mod_ev_group_3_param.rds")
+
+sample_df = wave1.raw
+```
+
+## Prep Group (non-H) Fit
+```{r}
+trials_by_sub = sample_df %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n())
+
+valid_subids = trials_by_sub$sid[trials_by_sub$sub_trials > 100]
+
+trials_by_sub = sample_df %>%
+  filter(sid %in% valid_subids) %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n()) %>%
+  arrange(sid) %>%
+  select(sub_trials) %>%
+  unlist() %>%
+  unname()
+
+response_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, v_cardoffered, v_response)  %>% 
+  mutate(v_response = as.numeric(v_response) - 1)%>% 
+  reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+  mutate_all(~replace(., is.na(.), 0)) %>%
+  arrange(sid) %>%
+  select(-c(sid))
+
+shown_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, v_cardoffered, v_targetdeck)  %>% 
+  reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+  mutate_all(~replace(., is.na(.), 0)) %>%
+  arrange(sid) %>%
+  select(-c(sid))
+
+outcome_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, v_cardoffered, v_netchange)  %>% 
+  reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+  mutate_all(~replace(., is.na(.), 0)) %>%
+  arrange(sid) %>%
+  select(-c(sid))
+
+num_valid_sids = length(valid_subids)
+
+data_list = list(
+  N        = num_valid_sids,
+  T        = max(trials_by_sub),
+  Tsubj    = trials_by_sub, #[N]
+  choice   = response_mat, #[N, T]
+  shown    = shown_mat, #[N, T]
+  outcome  = outcome_mat #[N, T]
+)
+
+stanmodel_arg = readRDS(group.fit.model)
+```
+
+
+## Fit
+```{r}
+n_warmup = 500
+n_iter = 1000
+n_chains = 2
+
+# Initialization
+
+init_fun <- function() {
+  list(
+    update_pr = rnorm(num_valid_sids, 0, 0.1),
+    wgt_pr = rnorm(num_valid_sids, 0, 0.1),
+    con_pr = rnorm(num_valid_sids, 0, 0.01)  # Ensure positive values for lognormal
+  )
+}
+
+fit <- rstan::sampling(object  = stanmodel_arg,
+                             data    = data_list,
+                             init    = "0",
+                             init_r  = 0.1,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = 0.95,
+                                            stepsize      = 1,
+                                            max_treedepth = 15))
+
+```
+
+
+
+
+
+
+## Diagnostics
+```{r}
+rstan::check_hmc_diagnostics(fit)
+
+rstan::traceplot(fit, pars = c("update", "wgt_pun", "wgt_rew", "con"))
+
+#pairs(fit)
+```
+
+
+
+
+
+
+
+# Test H Group Fit: 4 Param
+```{r}
+group.hier.fit.model = file.path(MODELS_DIR, "igt_mod_ev_group_hier.rds")
+#group.fit.model = file.path(MODELS_DIR, "igt_mod_ev_group_debug.rds")
+
+sample_df = wave1.raw
+```
+
+## Prep H Group Fit
+```{r}
+num_params = 4
+num_hier_params = 2
+
+testing = T
+
+if (grepl('debug', group.hier.fit.model) > 0){
+  # If this is a debug script
+  n_trials = 100
+  n_subs = 100
+} else if (testing){
+  # If we are testing the script
+  n_trials = 50
+  n_subs = 10
+} else {
+  n_trials = 100
+  n_subs = 50
+}
+
+trials_by_sub = sample_df %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n())
+
+valid_subids = trials_by_sub$sid[trials_by_sub$sub_trials > n_trials][1:n_subs]
+
+if (n_trials < max(trials_by_sub$sub_trials)){
+  trials_by_sub = sample_df %>%
+    filter(sid %in% valid_subids) %>%
+    group_by(sid) %>%
+    summarize(sub_trials = n_trials) %>%
+    arrange(sid) %>%
+    select(sub_trials) %>%
+    unlist() %>%
+    unname()
+  
+  response_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_response)  %>% 
+    mutate(v_response = as.numeric(v_response) - 1) %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid)) %>%
+    select(paste0("v_response.", 1:n_trials))
+  
+  shown_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_targetdeck)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid)) %>%
+    select(paste0("v_targetdeck.", 1:n_trials))
+  
+  outcome_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_netchange)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid)) %>%
+    select(paste0("v_netchange.", 1:n_trials))
+  
+} else {
+  # Full dataset
+  trials_by_sub = sample_df %>%
+    filter(sid %in% valid_subids) %>%
+    group_by(sid) %>%
+    summarize(sub_trials = n()) %>%
+    arrange(sid) %>%
+    select(sub_trials) %>%
+    unlist() %>%
+    unname()
+  
+  response_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_response)  %>% 
+    mutate(v_response = as.numeric(v_response) - 1) %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid))
+  
+  shown_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_targetdeck)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid))
+  
+  outcome_mat = sample_df %>% 
+    filter(sid %in% valid_subids) %>%
+    select(sid, v_cardoffered, v_netchange)  %>% 
+    reshape(idvar = "sid", timevar = "v_cardoffered", direction = "wide") %>%
+    mutate_all(~replace(., is.na(.), 0)) %>%
+    arrange(sid) %>%
+    select(-c(sid))
+}
+
+num_valid_sids = length(valid_subids)
+
+data_list = list(
+  N        = num_valid_sids,
+  T        = max(trials_by_sub),
+  Tsubj    = trials_by_sub, #[N]
+  choice   = response_mat, #[N, T]
+  shown    = shown_mat, #[N, T]
+  outcome  = outcome_mat #[N, T]
+)
+
+# Load precompiled model
+stanmodel_arg_hier = readRDS(group.hier.fit.model)
+```
+
+
+## Fit
+```{r}
+options(mc.cores = parallel::detectCores())
+
+#n_warmup = 3000
+#n_iter = 5000
+#n_chains = 1
+
+if (grepl('debug', group.hier.fit.model) > 0){
+  # If this is a debug script
+  n_warmup = 10
+  n_iter = 20
+  n_chains = 1
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+} else if (testing) {
+  # Testing script
+  n_warmup = 100
+  n_iter = 1000
+  n_chains = 2
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+}else {
+  n_warmup = 1000
+  n_iter = 10000
+  n_chains = 2
+  set_adapt_delta = 0.95
+  set_max_treedepth = 12
+}
+
+tss = (n_iter - n_warmup) * n_chains
+
+fit_hier <- rstan::sampling(object  = stanmodel_arg_hier,
+                             data    = data_list,
+                             init    = "random",
+                             init_r  = 0.1,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = set_adapt_delta,
+                                            stepsize      = 1,
+                                            max_treedepth = set_max_treedepth))
+
+params_hier = names(fit_hier)
+```
+
+
+## Save fit
+```{r}
+fit_output_file = sub('/models/', '/data/', paste0(tools::file_path_sans_ext(group.hier.fit.model), "_fit_output.rds"))
+saveRDS(fit_grp_nh, file = fit_output_file)
+
+# Extract samples
+samples = rstan::extract(fit_hier)
+```
+
+
+## Diagnostics
+
+### Divergence Check
+```{r}
+sampler_params <- rstan::get_sampler_params(fit_hier, inc_warmup = FALSE)
+
+# Count divergences
+divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
+div_rate = divergences/((n_iter - n_warmup) * n_chains)
+
+cat("Number of divergent transitions:", divergences, "\n")
+cat("Rate of divergent transitions:", div_rate, "\n")
+
+acceptable = div_rate < 0.001
+borderline = div_rate < 0.01
+problematic = div_rate > 0.01
+
+if (acceptable){
+  cat("Rate of divergent acceptable: rate < 0.001 \n")
+} else if (borderline){
+  cat("Rate of divergent borderline: rate < 0.01 \n")
+} else {
+  cat("Rate of divergent problematic: rate > 0.01 \n")
+}
+
+# If there are divergences, highlight them
+if (divergences > 0) {
+  for (chain in 1:length(sampler_params)){
+    cat("Number of divergent transitions for chain ", chain, ":", sum(sampler_params[[chain]][,'divergent__']), "\n")
+  }
+}
+
+# NUTS Energy Diagnostic
+if ("energy__" %in% colnames(sampler_params[[1]])) {
+  energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  # should be roughly bell-shaped
+  # If you see a very skewed or multimodal distribution, it might indicate sampling difficulties
+}
+```
+
+
+### Sample to display
+```{r}
+hier_params_extract = c("mu", "sigma")
+params_extract = c("con", "wgt_pun", "wgt_rew", "update")
+
+
+num_of_hier_params_to_view = num_params*num_hier_params + num_params # 1 hier param per main params and interpretable means
+num_of_params_to_view = num_params*2 # _pr versions too
+num_to_view = 10
+
+params = vector(mode = "list", length = 2 + num_of_params_to_view)
+params[[1]] = unlist(lapply(hier_params_extract, function(x) params_hier[grepl(x, params_hier)]))
+
+## None Hier
+non_hier_params = unlist(lapply(params_extract, function(x) params_hier[grepl(x, params_hier)]))
+non_hier_params = non_hier_params[!grepl("mu", non_hier_params)]
+
+start_idx =  1
+end_idx = n_subs
+
+sample_idx = sample(1:n_subs, num_to_view)
+#sample_idx = 1:num_to_view
+
+for (parm_num in 1:num_of_params_to_view){
+  param_vals = non_hier_params[start_idx:end_idx]
+  params[[parm_num + 1]] = param_vals[sample_idx]
+  start_idx = end_idx + 1
+  end_idx = end_idx + n_subs
+}
+
+params = c(unlist(params), "total_log_lik")
+```
+
+
+### Traceplots
+```{r}
+mcmc_trace(fit_hier, head(params, 12), iter1 = n_warmup + 1)  +
+  ggtitle("Trace Plots (should resemble white noise)")# Should be white noise (hairy caterpillars with out any obvious trends or patterns)
+```
+
+### Display chain density plots (10 per page)
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should overlap across chains
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens_chains(fit_hier, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page) + 1
+
+# Loop through each page
+for (page in 1:num_pages) {
+  if (page == 1){
+    # Calculate the range of plots for the current page
+    start_idx <- 1
+    end_idx <- num_of_hier_params_to_view
+  
+    # Extract the plots for the current page
+    plots_to_display <- plot_list[start_idx:end_idx]
+  
+    # Arrange and display plots for the current page
+    do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain: Hier"))
+  } else {
+    # Calculate the range of plots for the current page
+    start_idx <- (page - 1) * plots_per_page + 1 + num_of_hier_params_to_view
+    end_idx <- min(page * plots_per_page, num_plots) + num_of_hier_params_to_view
+  
+    # Extract the plots for the current page
+    plots_to_display <- plot_list[start_idx:end_idx]
+  
+    # Arrange and display plots for the current page
+    do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain"))
+  }
+}
+```
+
+### Overall Posterior Density Plots
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should resemble expected dist
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens(fit_hier, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page) + 1
+
+# Loop through each page
+for (page in 1:num_pages) {
+  if (page == 1){
+    # Calculate the range of plots for the current page
+    start_idx <- 1
+    end_idx <- num_of_hier_params_to_view
+  
+    # Extract the plots for the current page
+    plots_to_display <- plot_list[start_idx:end_idx]
+  
+    # Arrange and display plots for the current page
+    do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots: Hier"))
+  } else {
+    # Calculate the range of plots for the current page
+    start_idx <- (page - 1) * plots_per_page + 1 + num_of_hier_params_to_view
+    end_idx <- min(page * plots_per_page, num_plots) + num_of_hier_params_to_view
+  
+    # Extract the plots for the current page
+    plots_to_display <- plot_list[start_idx:end_idx]
+  
+    # Arrange and display plots for the current page
+    do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots"))
+  }
+}
+
+```
+
+
+### R-hat
+```{r}
+# <1.1, closer to 1 is better; over 1.1 is convergence issues
+rhat_values <- bayesplot::rhat(fit_hier, pars = params_hier)
+print(sample(rhat_values, as.integer(length(rhat_values)*0.1)))
+
+# Print NAs
+cat(c("NA params: ", names(rhat_values[is.na(rhat_values)])))
+
+rhat_values_valid = rhat_values[!is.na(rhat_values)]
+
+rhat_vals_to_print = c(rhat_values_valid[rhat_values_valid < quantile(rhat_values_valid, .10)], rhat_values_valid[rhat_values_valid > quantile(rhat_values_valid, .90)])
+
+mcmc_rhat(rhat_vals_to_print) +
+  ggtitle("Q1/3 R-hat Values (should be < 1.1)")
+```
+
+### Effective Sample Size
+```{r}
+print(tss)
+# at least a few 100, 10K for 95% HDI
+# neff > 0.1 (10% of total samples)
+# Higher is better - as close to 1 as possible
+n_eff <- neff_ratio(fit_hier, pars = params_hier)
+print(sample(n_eff, 8) * tss)
+print(sample(n_eff, 8))
+print(sum(n_eff * tss < 400)) # if any, should do more iterations
+#mcmc_neff(head(n_eff, 8)) +
+#  ggtitle("Effective Sample Size Ratio")
+hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
+
+# Print NAs
+cat(c("NA params: ", names(n_eff[is.na(n_eff)])))
+
+mcmc_neff(n_eff[n_eff < quantile(n_eff, .1, na.rm = T)])
+```
+
+### Monte Carlo Standard Error
+```{r}
+#head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+mcse_values <- apply(as_draws_matrix(fit_hier), 2, mcse_mean)
+posterior_sd <- apply(as_draws_matrix(fit_hier), 2, sd)
+mcse_ratio <- mcse_values / posterior_sd
+
+print(data.frame(MCSE = mcse_values, 
+                      Posterior_SD = posterior_sd, 
+                      MCSE_Ratio = mcse_ratio)[sample(length(mcse_values), 8),])
+
+print(sample(mcse_values, 8))
+print(sample(mcse_ratio, 8))
+hist(mcse_values, main = "Monte Carlo Standard Error (lower is better)", xlab = "MCSE")
+hist(mcse_ratio, main = "MCSE / Posterior SD Ratio", 
+     xlab = "Ratio (should be < 0.1)")
+
+# Print NAs
+cat(c("NA params: ", names(mcse_ratio[is.na(mcse_ratio)])))
+
+# Less than 10% of the param's post std
+params_to_check <- names(which(mcse_ratio > 0.1))
+if(length(params_to_check) > 0) {
+  cat("Parameters with MCSE > 10% of posterior SD:", 
+      paste(params_to_check, collapse = ", "), "\n")
+} else {
+  cat("No Parameters with MCSE > 10% of posterior SD")
+}
+
+```
+
+
+### Autocorrelation
+```{r}
+mcmc_acf(fit_hier, pars = sample(params_hier, 8)) +
+  ggtitle("Autocorrelation (Should decay quickly)")
+
+# High AC at high lags suggests poor mixing
+```
+
+### Parallel Coordinates Plot
+
+```{r}
+mcmc_parcoord(fit_hier, pars = params_hier[1:12]) +
+  ggtitle("Parallel Coordinates Plot")
+
+# Should be a mix of criss-crossing lines without any strong patterns
+# If lines are very tangled or show clear patterns, might indicate high correlation between params
+```
+
+### Pairs Plot
+```{r}
+pairs(fit_hier, pars = params_hier[1:8]) # Should not have red dots (divergences)
+```
+
+
+
+
+
+
+
+# Test Single Fit: 4 Param
+```{r}
+single.fit.model = file.path(MODELS_DIR, "igt_mod_single_ddm.rds")
+
+#sample_sub = sample(unique(wave1.raw$sid), 1)
+sample_sub = "202903"
+#sample_sub = "201401" #sample sub 2
+sample_sub = "202111"
+
+sample_df = wave1.raw %>%
+  filter(sid == sample(unique(wave1.raw$sid), 1))
+```
+
+## Prep Single Fit
+```{r}
+num_params = 4
+num_unbound_params = 3
+rt_bound = 0.05
+
+minrt_eps = 15/1000
+
+latency_s = sample_df$latency/1000
+
+play_bool = as.numeric(sample_df$v_response) - 1 == 1
+pass_bool = !play_bool
+
+
+data_list = list(
+  Nplay    = sum(play_bool),
+  Npass    = sum(pass_bool),
+  RTplay   = latency_s[play_bool],
+  RTpass   = latency_s[pass_bool],
+  minRT    = min(latency_s) + minrt_eps,
+  RTbound  = rt_bound
+)
+
+testing = T
+
+stanmodel_arg = readRDS(single.fit.model)
+```
+
+
+## Fit
+```{r}
+options(mc.cores = parallel::detectCores())
+
+if (grepl('debug', group.hier.fit.model) > 0){
+  # If this is a debug script
+  n_warmup = 10
+  n_iter = 20
+  n_chains = 1
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+} else if (testing) {
+  # Testing script
+  n_warmup = 100
+  n_iter = 1000
+  n_chains = 2
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+}else {
+  n_warmup = 1000
+  n_iter = 10000
+  n_chains = 2
+  set_adapt_delta = 0.95
+  set_max_treedepth = 12
+}
+
+tss = (n_iter - n_warmup) * n_chains
+
+fit_sing_ddm <- rstan::sampling(object  = stanmodel_arg,
+                             data    = data_list,
+                             init    = "random",
+                             init_r  = 0.1,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = set_adapt_delta,
+                                            stepsize      = 1,
+                                            max_treedepth = set_max_treedepth))
+
+
+params_sing_ddm = names(fit_sing_ddm)
+```
+
+
+## Save fit
+```{r}
+fit_output_file = sub('/models/', '/data/', paste0(tools::file_path_sans_ext(group.hier.fit.model), "_fit_output.rds"))
+saveRDS(fit_grp_nh, file = fit_output_file)
+
+# Extract samples
+samples = rstan::extract(fit_hier)
+```
+
+## Diagnostics
+
+### Divergence Check
+```{r}
+sampler_params <- rstan::get_sampler_params(fit_sing_ddm, inc_warmup = FALSE)
+
+# Count divergences
+divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
+div_rate = divergences/((n_iter - n_warmup) * n_chains)
+
+cat("Number of divergent transitions:", divergences, "\n")
+cat("Rate of divergent transitions:", div_rate, "\n")
+
+acceptable = div_rate < 0.001
+borderline = div_rate < 0.01
+problematic = div_rate > 0.01
+
+if (acceptable){
+  cat("Rate of divergent acceptable: rate < 0.001 \n")
+} else if (borderline){
+  cat("Rate of divergent borderline: rate < 0.01 \n")
+} else {
+  cat("Rate of divergent problematic: rate > 0.01 \n")
+}
+
+# If there are divergences, highlight them
+if (divergences > 0) {
+  for (chain in 1:length(sampler_params)){
+    cat("Number of divergent transitions for chain ", chain, ":", sum(sampler_params[[chain]][,'divergent__']), "\n")
+  }
+}
+
+# NUTS Energy Diagnostic
+if ("energy__" %in% colnames(sampler_params[[1]])) {
+  energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  # should be roughly bell-shaped
+  # If you see a very skewed or multimodal distribution, it might indicate sampling difficulties
+}
+```
+
+### Sample to display
+```{r}
+params_extract = c("boundary", "tau", "beta", "drift")
+params_output = c("rt_pred", "choice_pred", "prob_play")
+
+
+num_of_params_to_view = num_params + num_unbound_params
+num_to_view = 10
+
+params = vector(mode = "list", length = 1 + length(params_output))
+params[[1]] = params_sing_ddm[1:(num_of_params_to_view+1)]
+
+## Output Params
+ouput_params = unlist(lapply(params_output, function(x) params_sing_ddm[grepl(x, params_sing_ddm)]))
+
+start_idx =  1
+end_idx = nrow(sample_df)
+
+sample_idx = sample(1:end_idx, num_to_view)
+#sample_idx = 1:num_to_view
+
+for (parm_num in 1:length(params_output)){
+  param_vals = ouput_params[start_idx:end_idx]
+  params[[parm_num + 1]] = param_vals[sample_idx]
+  start_idx = end_idx + 1
+  end_idx = end_idx + nrow(sample_df)
+}
+
+params = unlist(params)
+```
+
+
+### Traceplots
+```{r}
+mcmc_trace(fit_sing_ddm, head(params, 12), iter1 = n_warmup + 1)  +
+  ggtitle("Trace Plots (should resemble white noise)")# Should be white noise (hairy caterpillars with out any obvious trends or patterns)
+```
+
+
+
+### Display chain density plots (10 per page)
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should overlap across chains
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens_chains(fit_sing_ddm, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- 10
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain"))
+}
+```
+
+### Overall Posterior Density Plots
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should resemble expected dist
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens(fit_sing_ddm, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots"))
+}
+```
+
+
+### R-hat
+```{r}
+# <1.1, closer to 1 is better; over 1.1 is convergence issues
+rhat_values <- bayesplot::rhat(fit_sing_ddm, pars = params)
+print(sample(rhat_values, as.integer(length(rhat_values)*0.1)))
+
+# Print NAs
+cat(c("NA params: ", names(rhat_values[is.na(rhat_values)])))
+
+rhat_values_valid = rhat_values[!is.na(rhat_values)]
+
+rhat_vals_to_print = c(rhat_values_valid[rhat_values_valid < quantile(rhat_values_valid, .10)], rhat_values_valid[rhat_values_valid > quantile(rhat_values_valid, .90)])
+
+mcmc_rhat(rhat_vals_to_print) +
+  ggtitle("Q1/3 R-hat Values (should be < 1.1)")
+```
+
+### Effective Sample Size
+```{r}
+print(tss)
+# at least a few 100, 10K for 95% HDI
+# neff > 0.1 (10% of total samples)
+# Higher is better - as close to 1 as possible
+n_eff <- neff_ratio(fit_sing_ddm, pars = params)
+print(sample(n_eff, 8) * tss)
+print(sample(n_eff, 8))
+print(sum(n_eff * tss < 400)) # if any, should do more iterations
+#mcmc_neff(head(n_eff, 8)) +
+#  ggtitle("Effective Sample Size Ratio")
+hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
+
+# Print NAs
+cat(c("NA params: ", names(n_eff[is.na(n_eff)])))
+
+mcmc_neff(n_eff[n_eff < quantile(n_eff, .25, na.rm = T)])
+```
+
+### Monte Carlo Standard Error
+```{r}
+#head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+mcse_values <- apply(as_draws_matrix(fit_sing_ddm), 2, mcse_mean)
+posterior_sd <- apply(as_draws_matrix(fit_sing_ddm), 2, sd)
+mcse_ratio <- mcse_values / posterior_sd
+
+print(data.frame(MCSE = mcse_values, 
+                 Posterior_SD = posterior_sd, 
+                 MCSE_Ratio = mcse_ratio)[sample(length(mcse_values), 8),])
+
+print(sample(mcse_values, 8))
+print(sample(mcse_ratio, 8))
+hist(mcse_values, main = "Monte Carlo Standard Error (lower is better)", xlab = "MCSE")
+hist(mcse_ratio, main = "MCSE / Posterior SD Ratio", 
+     xlab = "Ratio (should be < 0.1)")
+
+# Less than 10% of the param's post std
+params_to_check <- names(which(mcse_ratio > 0.1))
+if(length(params_to_check) > 0) {
+  cat("Parameters with MCSE > 10% of posterior SD:", 
+      paste(params_to_check, collapse = ", "), "\n")
+} else {
+  cat("No Parameters with MCSE > 10% of posterior SD")
+}
+
+```
+
+### Autocorrelation
+```{r}
+mcmc_acf(fit_sing, pars = head(names(fit_sing_ddm), 8)) +
+  ggtitle("Autocorrelation (Should decay quickly)")
+
+# High AC at high lags suggests poor mixing
+```
+
+### Parallel Coordinates Plot
+
+```{r}
+mcmc_parcoord(fit_sing_ddm, pars = names(fit_sing_ddm)[1:12]) +
+  ggtitle("Parallel Coordinates Plot")
+
+# Should be a mix of criss-crossing lines without any strong patterns
+# If lines are very tangled or show clear patterns, might indicate high correlation between params
+```
+
+### Pairs Plot
+```{r}
+pairs(fit_sing_ddm, pars = names(fit_sing_ddm)[1:8]) # Should not have red dots (divergences)
+```
+
+
+
+# Test NH Group Fit: 4 Param
+```{r}
+group.fit.ddm.model = file.path(MODELS_DIR, "igt_mod_group_ddm.rds")
+
+sample_df = wave1.raw
+```
+
+## Prep NH Group Fit
+```{r}
+num_params = 4
+num_unbound_params = 3
+rt_bound = 0.1
+
+minrt_eps = 15/1000
+
+testing = T
+
+if (grepl('debug', group.fit.model) > 0){
+  # If this is a debug script
+  n_trials = 100
+  n_subs = 100
+} else if (testing){
+  # If we are testing the script
+  n_trials = 50
+  n_subs = 10
+} else {
+  n_trials = 100
+  n_subs = 50
+}
+
+
+trials_by_sub = sample_df %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n())
+
+valid_subids = trials_by_sub$sid[trials_by_sub$sub_trials > n_trials][1:n_subs]
+
+trials_by_sub = sample_df %>%
+  filter(sid %in% valid_subids) %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n()) %>%
+  arrange(sid) %>%
+  select(sub_trials) %>%
+  unlist() %>%
+  unname()
+
+sample_df$play_bool = as.numeric(sample_df$v_response) - 1 == 1
+sample_df$pass_bool = !sample_df$play_bool
+sample_df$latency_s = sample_df$latency/1000
+
+
+RT_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, latency_s)  %>%
+  group_by(sid) %>%
+  mutate(trial = row_number()) %>%  # Create a trial number for each latency_s
+  pivot_wider(names_from = trial, values_from = latency_s, names_prefix = "trial_") %>%
+  as.data.frame() %>%
+  arrange(sid) %>%
+  select(paste0("trial_", 1:n_trials)) %>%
+  unname()
+
+playbool_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, play_bool)  %>%
+  group_by(sid) %>%
+  mutate(trial = row_number()) %>%
+  pivot_wider(names_from = trial, values_from = play_bool, names_prefix = "trial_") %>%
+  as.data.frame() %>%
+  arrange(sid) %>%
+  select(paste0("trial_", 1:n_trials)) %>%
+  unname()
+
+passbool_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, pass_bool)  %>%
+  group_by(sid) %>%
+  mutate(trial = row_number()) %>%
+  pivot_wider(names_from = trial, values_from = pass_bool, names_prefix = "trial_") %>%
+  as.data.frame() %>%
+  arrange(sid) %>%
+  select(paste0("trial_", 1:n_trials)) %>%
+  unname()
+
+RTplay_mat <- RT_mat
+RTplay_mat[!as.matrix(playbool_mat)] <- NA
+
+RTpass_mat <- RT_mat
+RTpass_mat[!as.matrix(passbool_mat)] <- NA
+
+min_RT <- apply(RT_mat, 1, min, na.rm = TRUE) + minrt_eps
+
+Nplay_vec = n_trials - rowSums(is.na(RTplay_mat))
+Npass_vec = n_trials - rowSums(is.na(RTpass_mat))
+
+
+shift_non_na_to_left <- function(x) {
+  non_na_values <- na.omit(x)            # Remove NA values
+  c(non_na_values, rep(NA, length(x) - length(non_na_values)))  # Pad with NA
+}
+
+RTplay_shifted <- t(apply(RTplay_mat, 1, shift_non_na_to_left))
+RTpass_shifted <- t(apply(RTpass_mat, 1, shift_non_na_to_left))
+
+RTplay_shifted[is.na(RTplay_shifted)] = 0
+RTpass_shifted[is.na(RTpass_shifted)] = 0
+
+RTplay_shifted = RTplay_shifted[, 1:max(Nplay_vec)]
+RTpass_shifted = RTpass_shifted[, 1:max(Npass_vec)]
+
+num_valid_sids = length(valid_subids)
+
+data_list = list(
+  N         = num_valid_sids,
+  T         = n_trials,
+  Nplay_max = max(Nplay_vec),
+  Npass_max = max(Npass_vec),
+  Nplay     = Nplay_vec, #[N]
+  Npass     = Npass_vec, #[N]
+  RTplay    = RTplay_shifted, #[N, T]
+  RTpass    = RTpass_shifted, #[N, T]
+  minRT     = min_RT, #[N]
+  RTbound   = rt_bound
+)
+
+stanmodel_arg = readRDS(group.fit.ddm.model)
+```
+
+
+## Fit
+```{r}
+options(mc.cores = parallel::detectCores())
+
+if (grepl('debug', group.fit.model) > 0){
+  # If this is a debug script
+  n_warmup = 10
+  n_iter = 20
+  n_chains = 1
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+} else if (testing) {
+  # Testing script
+  n_warmup = 100
+  n_iter = 1000
+  n_chains = 2
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+}else {
+  n_warmup = 1000
+  n_iter = 10000
+  n_chains = 2
+  set_adapt_delta = 0.95
+  set_max_treedepth = 12
+}
+
+tss = (n_iter - n_warmup) * n_chains
+
+fit_group_ddm <- rstan::sampling(object  = stanmodel_arg,
+                             data    = data_list,
+                             init    = "random",
+                             init_r  = 0.1,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = set_adapt_delta,
+                                            stepsize      = 1,
+                                            max_treedepth = set_max_treedepth))
+
+
+params_group_ddm = names(fit_group_ddm)
+```
+
+
+## Save fit
+```{r}
+fit_output_file = sub('/models/', '/data/', paste0(tools::file_path_sans_ext(group.fit.ddm.model), "_fit_output.rds"))
+saveRDS(fit_grp_nh, file = fit_output_file)
+
+# Extract samples
+samples = rstan::extract(fit_group_ddm)
+```
+
+## Diagnostics
+
+### Divergence Check
+```{r}
+sampler_params <- rstan::get_sampler_params(fit_group_ddm, inc_warmup = FALSE)
+
+# Count divergences
+divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
+div_rate = divergences/((n_iter - n_warmup) * n_chains)
+
+cat("Number of divergent transitions:", divergences, "\n")
+cat("Rate of divergent transitions:", div_rate, "\n")
+
+acceptable = div_rate < 0.001
+borderline = div_rate < 0.01
+problematic = div_rate > 0.01
+
+if (acceptable){
+  cat("Rate of divergent acceptable: rate < 0.001 \n")
+} else if (borderline){
+  cat("Rate of divergent borderline: rate < 0.01 \n")
+} else {
+  cat("Rate of divergent problematic: rate > 0.01 \n")
+}
+
+# If there are divergences, highlight them
+if (divergences > 0) {
+  for (chain in 1:length(sampler_params)){
+    cat("Number of divergent transitions for chain ", chain, ":", sum(sampler_params[[chain]][,'divergent__']), "\n")
+  }
+}
+
+# NUTS Energy Diagnostic
+if ("energy__" %in% colnames(sampler_params[[1]])) {
+  energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  # should be roughly bell-shaped
+  # If you see a very skewed or multimodal distribution, it might indicate sampling difficulties
+}
+```
+
+### Sample to display
+```{r}
+params_extract = unique(gsub("\\[.*?\\]", "", params_group_ddm))
+params_extract = params_extract[1:(length(params_extract)-1)]
+
+num_of_params_to_view = num_params + num_unbound_params
+num_to_view = 10
+
+start_idx =  1
+end_idx = n_subs
+
+sample_idx = sample(1:end_idx, num_to_view)
+#sample_idx = 1:num_to_view
+
+# Sort params_extract by length, longest to shortest
+params_extract_sorted <- sort(params_extract, decreasing = TRUE)
+
+# Initialize an empty list to store our results
+params <- vector("list", length(params_extract_sorted))
+names(params) <- params_extract_sorted
+
+# Keep track of all strings we've considered
+considered_strings <- character(0)
+
+# Loop through sorted parameter names
+for (param in params_extract_sorted) {
+  # Find matches for this parameter
+  matches <- params_group_ddm[grep(paste0("\\b", param, "\\b"), params_group_ddm)]
+  
+  # Remove any matches we've already considered
+  new_matches <- setdiff(matches, considered_strings)
+  
+  # Sample if we have more new matches than num_to_view
+  if (length(new_matches) > num_to_view) {
+    new_matches <- sample(new_matches, num_to_view)
+  }
+  
+  # Store the results
+  params[[param]] <- new_matches
+  
+  # Add these matches to our list of considered strings
+  considered_strings <- c(considered_strings, matches)
+}
+
+# Unlist the results if needed
+params <- unname(unlist(params))
+```
+
+
+### Traceplots
+```{r}
+mcmc_trace(fit_group_ddm, head(params, 12), iter1 = n_warmup + 1)  +
+  ggtitle("Trace Plots (should resemble white noise)")# Should be white noise (hairy caterpillars with out any obvious trends or patterns)
+```
+
+
+
+### Display chain density plots (10 per page)
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should overlap across chains
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens_chains(fit_group_ddm, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- 10
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain"))
+}
+```
+
+### Overall Posterior Density Plots
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should resemble expected dist
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens(fit_group_ddm, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots"))
+}
+```
+
+
+### R-hat
+```{r}
+# <1.1, closer to 1 is better; over 1.1 is convergence issues
+rhat_values <- bayesplot::rhat(fit_group_ddm, pars = params)
+print(sample(rhat_values, as.integer(length(rhat_values)*0.1)))
+
+# Print NAs
+cat(c("NA params: ", names(rhat_values[is.na(rhat_values)])))
+
+rhat_values_valid = rhat_values[!is.na(rhat_values)]
+
+rhat_vals_to_print = c(rhat_values_valid[rhat_values_valid < quantile(rhat_values_valid, .10)], rhat_values_valid[rhat_values_valid > quantile(rhat_values_valid, .90)])
+
+mcmc_rhat(rhat_vals_to_print) +
+  ggtitle("Q1/3 R-hat Values (should be < 1.1)")
+```
+
+### Effective Sample Size
+```{r}
+print(tss)
+# at least a few 100, 10K for 95% HDI
+# neff > 0.1 (10% of total samples)
+# Higher is better - as close to 1 as possible
+n_eff <- neff_ratio(fit_group_ddm, pars = params)
+print(sample(n_eff, 8) * tss)
+print(sample(n_eff, 8))
+print(sum(n_eff * tss < 400)) # if any, should do more iterations
+#mcmc_neff(head(n_eff, 8)) +
+#  ggtitle("Effective Sample Size Ratio")
+hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
+
+# Print NAs
+cat(c("NA params: ", names(n_eff[is.na(n_eff)])))
+
+mcmc_neff(n_eff[n_eff < quantile(n_eff, .25, na.rm = T)])
+```
+
+### Monte Carlo Standard Error
+```{r}
+#head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+mcse_values <- apply(as_draws_matrix(fit_group_ddm), 2, mcse_mean)
+posterior_sd <- apply(as_draws_matrix(fit_group_ddm), 2, sd)
+mcse_ratio <- mcse_values / posterior_sd
+
+print(data.frame(MCSE = mcse_values, 
+                 Posterior_SD = posterior_sd, 
+                 MCSE_Ratio = mcse_ratio)[sample(length(mcse_values), 8),])
+
+print(sample(mcse_values, 8))
+print(sample(mcse_ratio, 8))
+hist(mcse_values, main = "Monte Carlo Standard Error (lower is better)", xlab = "MCSE")
+hist(mcse_ratio, main = "MCSE / Posterior SD Ratio", 
+     xlab = "Ratio (should be < 0.1)")
+
+# Less than 10% of the param's post std
+params_to_check <- names(which(mcse_ratio > 0.1))
+if(length(params_to_check) > 0) {
+  cat("Parameters with MCSE > 10% of posterior SD:", 
+      paste(params_to_check, collapse = ", "), "\n")
+} else {
+  cat("No Parameters with MCSE > 10% of posterior SD")
+}
+
+```
+
+### Autocorrelation
+```{r}
+mcmc_acf(fit_sing, pars = head(names(fit_group_ddm), 8)) +
+  ggtitle("Autocorrelation (Should decay quickly)")
+
+# High AC at high lags suggests poor mixing
+```
+
+### Parallel Coordinates Plot
+
+```{r}
+mcmc_parcoord(fit_group_ddm, pars = params[1:12]) +
+  ggtitle("Parallel Coordinates Plot")
+
+# Should be a mix of criss-crossing lines without any strong patterns
+# If lines are very tangled or show clear patterns, might indicate high correlation between params
+```
+
+### Pairs Plot
+```{r}
+pairs(fit_sing_ddm, pars = params[1:8]) # Should not have red dots (divergences)
+```
+
+
+
+
+
+# Test H Group Fit: 4 Param
+```{r}
+group.hier.ddm.fit.model = file.path(MODELS_DIR, "igt_mod_group_hier_ddm.rds")
+#group.fit.model = file.path(MODELS_DIR, "igt_mod_ev_group_debug.rds")
+
+sample_df = wave1.raw
+```
+
+## Prep H Group Fit
+```{r}
+num_params = 4
+num_unbound_params = 3
+rt_bound = 0.1
+
+minrt_eps = 15/1000
+
+testing = T
+
+if (grepl('debug', group.fit.model) > 0){
+  # If this is a debug script
+  n_trials = 100
+  n_subs = 100
+} else if (testing){
+  # If we are testing the script
+  n_trials = 50
+  n_subs = 10
+} else {
+  n_trials = 100
+  n_subs = 50
+}
+
+
+trials_by_sub = sample_df %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n())
+
+valid_subids = trials_by_sub$sid[trials_by_sub$sub_trials > n_trials][1:n_subs]
+
+trials_by_sub = sample_df %>%
+  filter(sid %in% valid_subids) %>%
+  group_by(sid) %>%
+  summarize(sub_trials = n()) %>%
+  arrange(sid) %>%
+  select(sub_trials) %>%
+  unlist() %>%
+  unname()
+
+sample_df$play_bool = as.numeric(sample_df$v_response) - 1 == 1
+sample_df$pass_bool = !sample_df$play_bool
+sample_df$latency_s = sample_df$latency/1000
+
+
+RT_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, latency_s)  %>%
+  group_by(sid) %>%
+  mutate(trial = row_number()) %>%  # Create a trial number for each latency_s
+  pivot_wider(names_from = trial, values_from = latency_s, names_prefix = "trial_") %>%
+  as.data.frame() %>%
+  arrange(sid) %>%
+  select(paste0("trial_", 1:n_trials)) %>%
+  unname()
+
+playbool_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, play_bool)  %>%
+  group_by(sid) %>%
+  mutate(trial = row_number()) %>%
+  pivot_wider(names_from = trial, values_from = play_bool, names_prefix = "trial_") %>%
+  as.data.frame() %>%
+  arrange(sid) %>%
+  select(paste0("trial_", 1:n_trials)) %>%
+  unname()
+
+passbool_mat = sample_df %>% 
+  filter(sid %in% valid_subids) %>%
+  select(sid, pass_bool)  %>%
+  group_by(sid) %>%
+  mutate(trial = row_number()) %>%
+  pivot_wider(names_from = trial, values_from = pass_bool, names_prefix = "trial_") %>%
+  as.data.frame() %>%
+  arrange(sid) %>%
+  select(paste0("trial_", 1:n_trials)) %>%
+  unname()
+
+RTplay_mat <- RT_mat
+RTplay_mat[!as.matrix(playbool_mat)] <- NA
+
+RTpass_mat <- RT_mat
+RTpass_mat[!as.matrix(passbool_mat)] <- NA
+
+min_RT <- apply(RT_mat, 1, min, na.rm = TRUE) + minrt_eps
+
+Nplay_vec = n_trials - rowSums(is.na(RTplay_mat))
+Npass_vec = n_trials - rowSums(is.na(RTpass_mat))
+
+
+shift_non_na_to_left <- function(x) {
+  non_na_values <- na.omit(x)            # Remove NA values
+  c(non_na_values, rep(NA, length(x) - length(non_na_values)))  # Pad with NA
+}
+
+RTplay_shifted <- t(apply(RTplay_mat, 1, shift_non_na_to_left))
+RTpass_shifted <- t(apply(RTpass_mat, 1, shift_non_na_to_left))
+
+RTplay_shifted[is.na(RTplay_shifted)] = 0
+RTpass_shifted[is.na(RTpass_shifted)] = 0
+
+RTplay_shifted = RTplay_shifted[, 1:max(Nplay_vec)]
+RTpass_shifted = RTpass_shifted[, 1:max(Npass_vec)]
+
+num_valid_sids = length(valid_subids)
+
+data_list = list(
+  N         = num_valid_sids,
+  T         = n_trials,
+  Nplay_max = max(Nplay_vec),
+  Npass_max = max(Npass_vec),
+  Nplay     = Nplay_vec, #[N]
+  Npass     = Npass_vec, #[N]
+  RTplay    = RTplay_shifted, #[N, T]
+  RTpass    = RTpass_shifted, #[N, T]
+  minRT     = min_RT, #[N]
+  RTbound   = rt_bound
+)
+
+stanmodel_hier_ddm_arg = readRDS(group.hier.ddm.fit.model)
+```
+
+
+## Fit
+```{r}
+options(mc.cores = parallel::detectCores())
+
+#n_warmup = 3000
+#n_iter = 5000
+#n_chains = 1
+
+if (grepl('debug', group.hier.ddm.fit.model) > 0){
+  # If this is a debug script
+  n_warmup = 10
+  n_iter = 20
+  n_chains = 1
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+} else if (testing) {
+  # Testing script
+  n_warmup = 100
+  n_iter = 1000
+  n_chains = 2
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+}else {
+  n_warmup = 1000
+  n_iter = 10000
+  n_chains = 2
+  set_adapt_delta = 0.95
+  set_max_treedepth = 12
+}
+
+tss = (n_iter - n_warmup) * n_chains
+
+fit_ddm_hier <- rstan::sampling(object  = stanmodel_hier_ddm_arg,
+                             data    = data_list,
+                             init    = "random",
+                             init_r  = 0.1,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = set_adapt_delta,
+                                            stepsize      = 1,
+                                            max_treedepth = set_max_treedepth))
+
+params_ddm_hier = names(fit_ddm_hier)
+```
+
+
+## Save fit
+```{r}
+fit_output_file = sub('/models/', '/data/', paste0(tools::file_path_sans_ext(group.hier.fit.model), "_fit_output.rds"))
+saveRDS(fit_grp_nh, file = fit_output_file)
+
+# Extract samples
+samples = rstan::extract(fit_ddm_hier)
+```
+
+
+## Diagnostics
+
+### Divergence Check
+```{r}
+sampler_params <- rstan::get_sampler_params(fit_ddm_hier, inc_warmup = FALSE)
+
+# Count divergences
+divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
+div_rate = divergences/((n_iter - n_warmup) * n_chains)
+
+cat("Number of divergent transitions:", divergences, "\n")
+cat("Rate of divergent transitions:", div_rate, "\n")
+
+acceptable = div_rate < 0.001
+borderline = div_rate < 0.01
+problematic = div_rate > 0.01
+
+if (acceptable){
+  cat("Rate of divergent acceptable: rate < 0.001 \n")
+} else if (borderline){
+  cat("Rate of divergent borderline: rate < 0.01 \n")
+} else {
+  cat("Rate of divergent problematic: rate > 0.01 \n")
+}
+
+# If there are divergences, highlight them
+if (divergences > 0) {
+  for (chain in 1:length(sampler_params)){
+    cat("Number of divergent transitions for chain ", chain, ":", sum(sampler_params[[chain]][,'divergent__']), "\n")
+  }
+}
+
+# NUTS Energy Diagnostic
+if ("energy__" %in% colnames(sampler_params[[1]])) {
+  energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  # should be roughly bell-shaped
+  # If you see a very skewed or multimodal distribution, it might indicate sampling difficulties
+}
+```
+
+
+### Sample to display
+```{r}
+params_extract = unique(gsub("\\[.*?\\]", "", params_ddm_hier))
+params_extract = params_extract[1:(length(params_extract)-1)]
+
+num_to_view = 10
+
+start_idx =  1
+end_idx = n_subs
+
+sample_idx = sample(1:end_idx, num_to_view)
+#sample_idx = 1:num_to_view
+
+# Sort params_extract by length, longest to shortest
+params_extract_sorted <- sort(params_extract, decreasing = TRUE)
+
+# Initialize an empty list to store our results
+params <- vector("list", length(params_extract_sorted))
+names(params) <- params_extract_sorted
+
+# Keep track of all strings we've considered
+considered_strings <- character(0)
+
+# Loop through sorted parameter names
+for (param in params_extract_sorted) {
+  # Find matches for this parameter
+  matches <- params_ddm_hier[grep(paste0("\\b", param, "\\b"), params_ddm_hier)]
+  
+  # Remove any matches we've already considered
+  new_matches <- setdiff(matches, considered_strings)
+  
+  # Sample if we have more new matches than num_to_view
+  if (length(new_matches) > num_to_view) {
+    new_matches <- new_matches[sample_idx]
+  }
+  
+  # Store the results
+  params[[param]] <- new_matches
+  
+  # Add these matches to our list of considered strings
+  considered_strings <- c(considered_strings, matches)
+}
+
+# Unlist the results if needed
+params <- unlist(params)
+
+# Sort
+hier_params_vec = c("mu", "sigma", "mu_")
+main_params_vec = c("boundary", "tau", "beta", "drift")
+output_params_vec = c("choice_pred", "rt_pred", "prob_play", "total_log_lk")
+
+# Function to determine the priority of a parameter
+sort_params <- function(params, hier_params_vec, main_params_vec, output_params_vec) {
+  # Helper function to get the base name of a parameter
+  get_base_name <- function(param) {
+    gsub("_pr$", "", gsub("^mu_", "", param))
+  }
+  
+  # Helper function to check if a parameter matches a given base
+  matches_base <- function(param, base) {
+    param_base <- get_base_name(param)
+    return(param_base == base || grepl(paste0("^", base, "[0-9]+$"), param_base))
+  }
+  
+  # Sort function
+  param_order <- function(param) {
+    # Hierarchical parameters
+    if (param == "mu" || param == "mu_pr") return(1)
+    if (grepl("^sigma", param)) return(2)
+    if (grepl("^mu_", param)) return(3)
+    
+    # Main parameters
+    for (i in seq_along(main_params_vec)) {
+      if (matches_base(param, main_params_vec[i])) {
+        return(3 + 2*i - (if(grepl("_pr$", param)) 1 else 0))
+      }
+    }
+    
+    # Output parameters
+    for (i in seq_along(output_params_vec)) {
+      if (grepl(paste0("^", output_params_vec[i]), param)) {
+        return(3 + 2*length(main_params_vec) + i)
+      }
+    }
+    
+    # If not found in any category, put at the end
+    return(1000)
+  }
+  
+  # Sort the parameters
+  sorted_params <- names(sort(sapply(params, param_order)))
+  return(sorted_params)
+}
+
+# Sort params_flat
+params <- unname(params[sort_params(params, hier_params_vec, main_params_vec, output_params_vec)])
+```
+
+
+### Traceplots
+```{r}
+mcmc_trace(fit_ddm_hier, head(params, 12), iter1 = n_warmup + 1)  +
+  ggtitle("Trace Plots (should resemble white noise)")# Should be white noise (hairy caterpillars with out any obvious trends or patterns)
+```
+
+### Display chain density plots (10 per page)
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should overlap across chains
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens_chains(fit_ddm_hier, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page) + 1
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain"))
+}
+```
+
+### Overall Posterior Density Plots
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should resemble expected dist
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens(fit_hier, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page) + 1
+
+# Loop through each page
+for (page in 1:num_pages) {
+  if (page == 1){
+    # Calculate the range of plots for the current page
+    start_idx <- 1
+    end_idx <- num_of_hier_params_to_view
+  
+    # Extract the plots for the current page
+    plots_to_display <- plot_list[start_idx:end_idx]
+  
+    # Arrange and display plots for the current page
+    do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots: Hier"))
+  } else {
+    # Calculate the range of plots for the current page
+    start_idx <- (page - 1) * plots_per_page + 1 + num_of_hier_params_to_view
+    end_idx <- min(page * plots_per_page, num_plots) + num_of_hier_params_to_view
+  
+    # Extract the plots for the current page
+    plots_to_display <- plot_list[start_idx:end_idx]
+  
+    # Arrange and display plots for the current page
+    do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots"))
+  }
+}
+
+```
+
+
+### R-hat
+```{r}
+# <1.1, closer to 1 is better; over 1.1 is convergence issues
+rhat_values <- bayesplot::rhat(fit_ddm_hier, pars = params_hier)
+print(sample(rhat_values, as.integer(length(rhat_values)*0.1)))
+
+# Print NAs
+cat(c("NA params: ", names(rhat_values[is.na(rhat_values)])))
+
+rhat_values_valid = rhat_values[!is.na(rhat_values)]
+
+#rhat_vals_to_print = c(rhat_values_valid[rhat_values_valid < quantile(rhat_values_valid, .10)], rhat_values_valid[rhat_values_valid > quantile(rhat_values_valid, .90)])
+
+rhat_vals_to_print = c(rhat_values_valid[rhat_values_valid < quantile(rhat_values_valid, .90)])
+
+mcmc_rhat(rhat_vals_to_print) +
+  ggtitle("Q1/3 R-hat Values (should be < 1.1)")
+```
+
+### Effective Sample Size
+```{r}
+print(tss)
+# at least a few 100, 10K for 95% HDI
+# neff > 0.1 (10% of total samples)
+# Higher is better - as close to 1 as possible
+n_eff <- neff_ratio(fit_ddm_hier, pars = params)
+print(sample(n_eff, 8) * tss)
+print(sample(n_eff, 8))
+print(sum(n_eff * tss < 400)) # if any, should do more iterations
+#mcmc_neff(head(n_eff, 8)) +
+#  ggtitle("Effective Sample Size Ratio")
+hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
+
+# Print NAs
+cat(c("NA params: ", names(n_eff[is.na(n_eff)])))
+
+mcmc_neff(n_eff[n_eff < quantile(n_eff, .1, na.rm = T)])
+```
+
+### Monte Carlo Standard Error
+```{r}
+#head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+mcse_values <- apply(as_draws_matrix(fit_ddm_hier), 2, mcse_mean)
+posterior_sd <- apply(as_draws_matrix(fit_ddm_hier), 2, sd)
+mcse_ratio <- mcse_values / posterior_sd
+
+print(data.frame(MCSE = mcse_values, 
+                      Posterior_SD = posterior_sd, 
+                      MCSE_Ratio = mcse_ratio)[sample(length(mcse_values), 8),])
+
+print(sample(mcse_values, 8))
+print(sample(mcse_ratio, 8))
+hist(mcse_values, main = "Monte Carlo Standard Error (lower is better)", xlab = "MCSE")
+hist(mcse_ratio, main = "MCSE / Posterior SD Ratio", 
+     xlab = "Ratio (should be < 0.1)")
+
+# Print NAs
+cat(c("NA params: ", names(mcse_ratio[is.na(mcse_ratio)])))
+
+# Less than 10% of the param's post std
+params_to_check <- names(which(mcse_ratio > 0.1))
+if(length(params_to_check) > 0) {
+  cat("Parameters with MCSE > 10% of posterior SD:", 
+      paste(params_to_check, collapse = ", "), "\n")
+} else {
+  cat("No Parameters with MCSE > 10% of posterior SD")
+}
+
+```
+
+
+### Autocorrelation
+```{r}
+mcmc_acf(fit_ddm_hier, pars = sample(params, 8)) +
+  ggtitle("Autocorrelation (Should decay quickly)")
+
+# High AC at high lags suggests poor mixing
+```
+
+### Parallel Coordinates Plot
+
+```{r}
+mcmc_parcoord(fit_ddm_hier, pars = params[1:12]) +
+  ggtitle("Parallel Coordinates Plot")
+
+# Should be a mix of criss-crossing lines without any strong patterns
+# If lines are very tangled or show clear patterns, might indicate high correlation between params
+```
+
+### Pairs Plot
+```{r}
+pairs(fit_ddm_hier, pars = params[1:8]) # Should not have red dots (divergences)
+```
+
+
+
+
+
+# Test Sing eD Fit: 4 Param
+```{r}
+single.fit.model.ev.ddm = file.path(MODELS_DIR, "igt_mod_single_ev_ddm.rds")
+
+#sample_sub = sample(unique(wave1.raw$sid), 1)
+sample_sub = "202903"
+#sample_sub = "201401" #sample sub 2
+sample_sub = "202111"
+
+sample_df = wave1.raw %>%
+  filter(sid == sample(unique(wave1.raw$sid), 1))
+```
+
+## Prep Single Fit
+```{r}
+num_params = 7
+num_unbound_params = 0
+rt_bound = 0.05
+
+minrt_eps = 15/1000
+
+latency_s = sample_df$latency/1000
+
+play_bool = as.numeric(sample_df$v_response) - 1 == 1
+pass_bool = !play_bool
+
+
+data_list = list(
+  T    = nrow(sample_df),
+  minRT    = min(latency_s) + minrt_eps,
+  RTbound  = rt_bound,
+  RT   = latency_s,
+  choice   = as.numeric(sample_df$v_response) - 1,
+  shown    = sample_df$v_targetdeck,
+  outcome  = sample_df$v_netchange
+)
+
+testing = T
+
+stanmodel_arg = readRDS(single.fit.model.ev.ddm)
+```
+
+
+## Fit
+```{r}
+options(mc.cores = parallel::detectCores())
+
+if (grepl('debug', single.fit.model.ev.ddm) > 0){
+  # If this is a debug script
+  n_warmup = 10
+  n_iter = 20
+  n_chains = 1
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+} else if (testing) {
+  # Testing script
+  n_warmup = 100
+  n_iter = 1000
+  n_chains = 2
+  set_adapt_delta = 0.9
+  set_max_treedepth = 10
+}else {
+  n_warmup = 1000
+  n_iter = 10000
+  n_chains = 2
+  set_adapt_delta = 0.95
+  set_max_treedepth = 12
+}
+
+tss = (n_iter - n_warmup) * n_chains
+
+fit_sing_ev_ddm <- rstan::sampling(object  = stanmodel_arg,
+                             data    = data_list,
+                             init    = "random",
+                             init_r  = 0.1,
+                             chains  = n_chains,
+                             iter    = n_iter,
+                             warmup  = n_warmup, # Bump this up in general
+                             thin    = 1,
+                             control = list(adapt_delta   = set_adapt_delta,
+                                            stepsize      = 1,
+                                            max_treedepth = set_max_treedepth))
+
+
+params_sing_ev_ddm = names(fit_sing_ev_ddm)
+```
+
+
+## Save fit
+```{r}
+fit_output_file = sub('/models/', '/data/', paste0(tools::file_path_sans_ext(single.fit.model.ev.ddm), "_fit_output.rds"))
+saveRDS(fit_grp_nh, file = fit_output_file)
+
+# Extract samples
+samples = rstan::extract(fit_sing_ev_ddm)
+```
+
+## Diagnostics
+
+### Divergence Check
+```{r}
+sampler_params <- rstan::get_sampler_params(fit_sing_ev_ddm, inc_warmup = FALSE)
+
+# Count divergences
+divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
+div_rate = divergences/((n_iter - n_warmup) * n_chains)
+
+cat("Number of divergent transitions:", divergences, "\n")
+cat("Rate of divergent transitions:", div_rate, "\n")
+
+acceptable = div_rate < 0.001
+borderline = div_rate < 0.01
+problematic = div_rate > 0.01
+
+if (acceptable){
+  cat("Rate of divergent acceptable: rate < 0.001 \n")
+} else if (borderline){
+  cat("Rate of divergent borderline: rate < 0.01 \n")
+} else {
+  cat("Rate of divergent problematic: rate > 0.01 \n")
+}
+
+# If there are divergences, highlight them
+if (divergences > 0) {
+  for (chain in 1:length(sampler_params)){
+    cat("Number of divergent transitions for chain ", chain, ":", sum(sampler_params[[chain]][,'divergent__']), "\n")
+  }
+}
+
+# NUTS Energy Diagnostic
+if ("energy__" %in% colnames(sampler_params[[1]])) {
+  energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  # should be roughly bell-shaped
+  # If you see a very skewed or multimodal distribution, it might indicate sampling difficulties
+}
+```
+
+### Sample to display
+```{r}
+params_extract = c("boundary", "tau", "beta", "drift_scaling", "wgt_pun", "wgt_rew", "update")
+params_output = c("rt_pred", "choice_pred", "prob_play")
+
+
+num_of_params_to_view = num_params + num_unbound_params
+num_to_view = 10
+
+params = vector(mode = "list", length = 1 + length(params_output))
+params[[1]] = params_sing_ev_ddm[1:(num_of_params_to_view+1)]
+
+## Output Params
+ouput_params = unlist(lapply(params_output, function(x) params_sing_ev_ddm[grepl(x, params_sing_ev_ddm)]))
+
+start_idx =  1
+end_idx = nrow(sample_df)
+
+sample_idx = sample(1:end_idx, num_to_view)
+#sample_idx = 1:num_to_view
+
+for (parm_num in 1:length(params_output)){
+  param_vals = ouput_params[start_idx:end_idx]
+  params[[parm_num + 1]] = param_vals[sample_idx]
+  start_idx = end_idx + 1
+  end_idx = end_idx + nrow(sample_df)
+}
+
+params = unlist(params)
+```
+
+
+### Traceplots
+```{r}
+mcmc_trace(fit_sing_ev_ddm, head(params, 12), iter1 = n_warmup + 1)  +
+  ggtitle("Trace Plots (should resemble white noise)")# Should be white noise (hairy caterpillars with out any obvious trends or patterns)
+```
+
+
+
+### Display chain density plots (10 per page)
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should overlap across chains
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens_chains(fit_sing_ev_ddm, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- 10
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Density Plots by Chain"))
+}
+```
+
+### Overall Posterior Density Plots
+```{r}
+# Create a list to store the plots
+plot_list <- list() # Should resemble expected dist
+
+# Generate plots
+for (param in params){
+  plot <- mcmc_dens(fit_sing_ev_ddm, pars = param)
+  plot_list[[param]] <- plot
+}
+
+# Define the number of plots per page
+plots_per_page <- num_to_view
+num_plots <- length(plot_list)
+num_pages <- ceiling(num_plots / plots_per_page)
+
+# Loop through each page
+for (page in 1:num_pages) {
+  # Calculate the range of plots for the current page
+  start_idx <- (page - 1) * plots_per_page + 1
+  end_idx <- min(page * plots_per_page, num_plots)
+  
+  # Extract the plots for the current page
+  plots_to_display <- plot_list[start_idx:end_idx]
+  
+  # Arrange and display plots for the current page
+  do.call(grid.arrange, c(plots_to_display, ncol = 2, top = "Overall Density Plots"))
+}
+```
+
+
+### R-hat
+```{r}
+# <1.1, closer to 1 is better; over 1.1 is convergence issues
+rhat_values <- bayesplot::rhat(fit_sing_ev_ddm, pars = params)
+print(sample(rhat_values, as.integer(length(rhat_values)*0.1)))
+
+# Print NAs
+cat(c("NA params: ", names(rhat_values[is.na(rhat_values)])))
+
+rhat_values_valid = rhat_values[!is.na(rhat_values)]
+
+rhat_vals_to_print = c(rhat_values_valid[rhat_values_valid < quantile(rhat_values_valid, .10)], rhat_values_valid[rhat_values_valid > quantile(rhat_values_valid, .90)])
+
+mcmc_rhat(rhat_vals_to_print) +
+  ggtitle("Q1/3 R-hat Values (should be < 1.1)")
+```
+
+### Effective Sample Size
+```{r}
+print(tss)
+# at least a few 100, 10K for 95% HDI
+# neff > 0.1 (10% of total samples)
+# Higher is better - as close to 1 as possible
+n_eff <- neff_ratio(fit_sing_ev_ddm, pars = params)
+print(sample(n_eff, 8) * tss)
+print(sample(n_eff, 8))
+print(sum(n_eff * tss < 400)) # if any, should do more iterations
+#mcmc_neff(head(n_eff, 8)) +
+#  ggtitle("Effective Sample Size Ratio")
+hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
+
+# Print NAs
+cat(c("NA params: ", names(n_eff[is.na(n_eff)])))
+
+mcmc_neff(n_eff[n_eff < quantile(n_eff, .25, na.rm = T)])
+```
+
+### Monte Carlo Standard Error
+```{r}
+#head(apply(as_draws_matrix(fit), 2, function(x) mcse_mean(x)), 8)
+mcse_values <- apply(as_draws_matrix(fit_sing_ev_ddm), 2, mcse_mean)
+posterior_sd <- apply(as_draws_matrix(fit_sing_ev_ddm), 2, sd)
+mcse_ratio <- mcse_values / posterior_sd
+
+print(data.frame(MCSE = mcse_values, 
+                 Posterior_SD = posterior_sd, 
+                 MCSE_Ratio = mcse_ratio)[sample(length(mcse_values), 8),])
+
+print(sample(mcse_values, 8))
+print(sample(mcse_ratio, 8))
+hist(mcse_values, main = "Monte Carlo Standard Error (lower is better)", xlab = "MCSE")
+hist(mcse_ratio, main = "MCSE / Posterior SD Ratio", 
+     xlab = "Ratio (should be < 0.1)")
+
+# Less than 10% of the param's post std
+params_to_check <- names(which(mcse_ratio > 0.1))
+if(length(params_to_check) > 0) {
+  cat("Parameters with MCSE > 10% of posterior SD:", 
+      paste(params_to_check, collapse = ", "), "\n")
+} else {
+  cat("No Parameters with MCSE > 10% of posterior SD")
+}
+
+```
+
+### Autocorrelation
+```{r}
+mcmc_acf(fit_sing, pars = head(names(fit_sing_ev_ddm), 8)) +
+  ggtitle("Autocorrelation (Should decay quickly)")
+
+# High AC at high lags suggests poor mixing
+```
+
+### Parallel Coordinates Plot
+
+```{r}
+mcmc_parcoord(fit_sing_ev_ddm, pars = names(fit_sing_ev_ddm)[1:12]) +
+  ggtitle("Parallel Coordinates Plot")
+
+# Should be a mix of criss-crossing lines without any strong patterns
+# If lines are very tangled or show clear patterns, might indicate high correlation between params
+```
+
+### Pairs Plot
+```{r}
+pairs(fit_sing_ev_ddm, pars = names(fit_sing_ev_ddm)[1:8]) # Should not have red dots (divergences)
+```
+
+
+```{r}
+```
+

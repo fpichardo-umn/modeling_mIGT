@@ -1,0 +1,106 @@
+---
+title: "Precompile Models"
+author: "Felix Pichardo"
+date: "2024-08-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load packages
+library(plyr)   #for revalue
+library(dplyr)  #for %>%
+library(ggplot2)
+library(gridExtra)
+library(grid)   #for textGrob
+library(kableExtra) #for knitr tables
+library(tidyr)
+library(here)
+library(foreign)
+
+# Directories
+PROJ_DIR            = file.path(here::here())
+MODELS_DIR          = file.path(PROJ_DIR, "models")
+MODELS_TXT_DIR      = file.path(MODELS_DIR, "txt")
+MODELS_TXT_FIT_DIR  = file.path(MODELS_TXT_DIR, "fit")
+MODELS_TXT_PoPC_DIR = file.path(MODELS_TXT_DIR, "postpc")
+MODELS_RDS_DIR      = file.path(MODELS_DIR, "rds")
+MODELS_RDS_FIT_DIR  = file.path(MODELS_RDS_DIR, "fit")
+MODELS_RDS_PoPC_DIR = file.path(MODELS_RDS_DIR, "postpc")
+
+# Stan functions
+# Function to create symlink, compile model, and remove symlink
+compile_stan_model_with_copy <- function(stan_file, rds_file) {
+  rstan::rstan_options("auto_write" = TRUE)
+  
+  # Extract the filename from the full path
+  stan_filename = basename(stan_file)
+  rds_filename  = basename(rds_file)
+  model_name    = tools::file_path_sans_ext(stan_filename)
+  
+  copy_path = file.path(dirname(stan_file), rds_filename)
+  if (file.exists(rds_file)) {
+    # Create symlink in the same directory as the .stan file
+    file.copy(rds_file, copy_path)
+  }
+  
+  # Compile the model
+  tryCatch({
+    cat(paste0("Compiling: ", stan_filename, "\n"))
+    cat(paste0("\t...", "\n"))
+    precomp.stan = rstan::stan_model(file = stan_file, model_name,
+                                     auto_write = T)
+    
+    if (file.exists(rds_file)) {
+      # Create symlink in the same directory as the .stan file
+      file.rename(copy_path, rds_file)
+    } else {
+      saveRDS(precomp.stan, rds_file)
+    }
+    
+    
+    cat(paste0("\tCompleted: ", rds_filename, "\n"))
+    cat("\n")
+  }, finally = {
+    # Always remove the symlink, even if there's an error
+    if (file.exists(copy_path)) {
+      file.remove(copy_path)
+    }
+  })
+}
+
+
+# File lists
+model.fit.dir.files = list.files(MODELS_TXT_FIT_DIR)
+model.fit.dir.files = model.fit.dir.files[endsWith(model.fit.dir.files, ".stan")]
+```
+
+
+# Pre-Compile Models
+```{r}
+model.fit.txt.file = model.fit.dir.files[4]
+
+fit.model.stan = file.path(MODELS_TXT_FIT_DIR, model.fit.txt.file)
+fit.model.rds  = file.path(MODELS_RDS_FIT_DIR, paste0(tools::file_path_sans_ext(model.fit.txt.file), ".rds"))
+
+compile_stan_model_with_copy(fit.model.stan, fit.model.rds)
+```
+
+
+```{r}
+for (model.fit.txt.file in model.fit.dir.files){
+  fit.model.stan = file.path(MODELS_TXT_FIT_DIR, model.fit.txt.file)
+  fit.model.rds  = file.path(MODELS_RDS_FIT_DIR, paste0(tools::file_path_sans_ext(model.fit.txt.file), ".rds"))
+  
+  compile_stan_model_with_copy(fit.model.stan, fit.model.rds)
+}
+```
+
+
+
+
+```{r}
+
+```
+

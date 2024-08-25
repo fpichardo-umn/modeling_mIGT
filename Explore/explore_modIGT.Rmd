@@ -1,0 +1,248 @@
+---
+title: "Explore modIGT Data"
+author: "Felix Pichardo"
+date: "2024-06-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load packages
+library(plyr)   #for revalue
+library(dplyr)  #for %>%
+library(ggplot2)
+library(gridExtra)
+library(grid)   #for textGrob
+library(kableExtra) #for knitr tables
+library(tidyr)
+library(foreign)
+
+# Directories
+PROJ_DIR   = file.path(here::here())
+DATA_DIR   = file.path(PROJ_DIR, "Data")
+MODELS_DIR = file.path(PROJ_DIR, "models")
+
+# Load Data
+## Trial-level data
+wave1.sav.file = file.path(DATA_DIR, "modigt_data_Wave1.sav")
+wave1.raw      = read.spss(wave1.sav.file,to.data.frame = TRUE)
+
+```
+
+# Explore Variables
+```{r}
+names(wave1.raw)
+```
+
+## Schools, Districts, SIDs
+Ok, so the data is nested in districts and schools?
+
+```{r}
+nesting_cols = c("districtid", "schoolid")
+
+table(wave1.raw[nesting_cols])
+```
+Hmm, so there is one district with 3 schools (6: 25, 27, 28)
+
+How many of each and how many students per?
+```{r}
+length(unique(wave1.raw$sid))
+```
+
+```{r}
+sids_by_schoolid = wave1.raw %>%
+  group_by(schoolid) %>%
+  summarise(unique_sids = n_distinct(sid))
+
+sids_by_schoolid
+```
+
+
+```{r}
+hist(sids_by_schoolid$unique_sids, main = "Count of SIDs by School", xlab = "SID N")
+```
+```{r}
+sids_by_dist = wave1.raw %>%
+  group_by(districtid) %>%
+  summarise(unique_sids = n_distinct(sid))
+
+sids_by_dist
+```
+
+```{r}
+hist(sids_by_dist$unique_sids, main = "Count of SIDs by District", xlab = "SID N")
+```
+
+# Administrations of the task
+```{r}
+table(wave1.raw$admin)
+```
+
+```{r}
+table(table(wave1.raw[c("sid", "s_starttime")]))
+```
+
+Ok, so we have 9 districts and 11 schools (3 are in district 6.
+District sample sizes are almost uniform, but there are a couple of high student counts in a couple - right tailed.
+School sample sizes are almost uniform, but there are a few more schools in the 50-150 range.
+
+Also, in wave 1, there was only one administration of the IGT - 120 is the full IGT plus the 20 trials of practice. Clearly, a good portion of participants did not complete the full session. There are some who didn't even finish the training trials!
+
+[ ] Complete vs incomplete (and kinds of incomplete data)
+
+```{r}
+to_numberic = c("districtid", "schoolid", "sid", "grpid")
+wave1.raw[to_numberic] = lapply(wave1.raw[to_numberic], as.numeric)
+col_classes = unlist(lapply(wave1.raw, class))
+numeric_cols = names(col_classes[col_classes == "numeric"])
+numeric_cols = numeric_cols[numeric_cols != "v_defaultresponse"] # Remove problematic col
+
+numeric_wave1.raw = wave1.raw[numeric_cols]
+
+explore.corr = cor(numeric_wave1.raw)
+corrplot::corrplot(explore.corr)
+```
+
+This sort of suggests a few factors of variables in there:
+  * An ID factor
+    * district, school, group, and start date are all related
+      * Schools are associated with specific districts, and they were likely recruited one at a time (hence the start date corr)
+    * start time is a little related but negatively
+      * Perhaps certain districts/schools only allowed collection at certain times
+  * A session duration factor
+    * elapsed time, blocknum, count_igtblocks, v_cardoffered, v_currenttotal, v_number_goodplay, v_total_gooddeck, v_number_badplay, v_total_baddeck
+    * v_forcedwins 1-4
+      * (-) with all others and (+) with self
+      * OK, so I'm guessing that early on there are only wins and that each deck is controlled to have the same number of wins, but there are no forced wins as the session goes!
+  * A good/bad play factor
+    * Trialnum, v_number_goodplay_block, v_total_goodplay_block, same but bad
+    * possibly other stuff related to good/bad play
+  * A loss/net-change factor
+    * v_netchange is only highly (-) related to v_loss
+
+
+## Groups?
+```{r}
+table(wave1.raw$grpid)
+```
+
+```{r}
+nesting_cols = c("districtid", "grpid")
+
+table(wave1.raw[nesting_cols])
+```
+
+```{r}
+nesting_cols = c("schoolid", "grpid")
+
+table(wave1.raw[nesting_cols])
+```
+
+OK, so there are no overlaps in groupids across districts or schools, and each of those has multiple groupids.
+
+```{r}
+nesting_cols = c("grpid", "districtid")
+
+table(wave1.raw[nesting_cols])
+```
+
+```{r}
+nesting_cols = c("grpid", "schoolid")
+
+table(wave1.raw[nesting_cols])
+```
+
+```{r}
+nesting_cols = c("grpid", "s_startdate")
+
+table(wave1.raw[nesting_cols])
+```
+
+```{r}
+nesting_cols = c("s_startdate", "grpid")
+
+table(wave1.raw[nesting_cols])
+```
+
+```{r}
+nesting_cols = c("s_startdate", "schoolid")
+
+table(wave1.raw[nesting_cols])
+```
+
+```{r}
+wave1.raw %>%
+  group_by(schoolid) %>%
+  summarise(unique_dates = n_distinct(s_startdate)) %>%
+  arrange(desc(unique_dates))
+```
+
+OK, so most were collected in one day, but there are a few schools that have 2 and one with 5 days.
+
+
+```{r}
+wave1.raw %>%
+  group_by(grpid) %>%
+  summarise(unique_dates = n_distinct(s_startdate)) %>%
+  arrange(desc(unique_dates))
+```
+
+Meanwhile, each group only has one specific date. 
+
+```{r}
+wave1.raw %>%
+    group_by(schoolid) %>%
+    summarise(unique_groups = n_distinct(grpid)) %>%
+    arrange(desc(unique_groups))
+```
+
+```{r}
+wave1.raw %>%
+     group_by(s_startdate) %>%
+     summarise(unique_groups = n_distinct(grpid)) %>%
+     arrange(desc(unique_groups))
+```
+
+Each date has 1-11 groups in it! So the group has to do with the school and the date of collection.Though, the 20 count for schoolid 30 is off given that there are 19 dates...
+
+```{r}
+wave1.raw %>%
+  group_by(sid) %>%
+  summarise(n = n()) %>%
+     arrange(desc(n))
+```
+
+```{r}
+sample_sub = 200001
+
+sample_df = wave1.raw[wave1.raw$sid == sample_sub,]
+
+sample_sub2 = 200861
+
+sample_df2 = wave1.raw[wave1.raw$sid == sample_sub2,]
+```
+
+```{r}
+wave1.raw %>%
+  group_by(sid) %>%
+  summarise(unique_groups = n_distinct(v_groupnumber)) %>%
+  arrange(desc(unique_groups))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+```
+

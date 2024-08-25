@@ -1,0 +1,157 @@
+
+---
+title: "Modified IGT Computational Model"
+output: html_document
+---
+
+# EV Model
+## 1. Valence Calculation
+
+The valence $V$ is computed from the net outcome $R$ using attention weights $w_+$ and $w_-$:
+
+$$
+V = w_+ \cdot \max(0, R) + w_- \cdot \min(0, R)
+$$
+
+#### where:
+* $w_+$ is the weight for positive values (gains).
+* $w_-$ is the weight for negative values (losses). 
+* $R$ is the net outcome (total reward or loss).
+  + Participants are only shown the **net outcome**.
+  
+## 2. Expectation Update Rule
+
+The expectation $E$ is updated based on the observed valence $V$ and the update rate $\alpha$:
+
+$$
+E_{t+1} = (1 - \alpha) \cdot E_t + \alpha \cdot (V_t - E_t)
+$$
+
+#### where:
+- $E_t$ is the expected value at trial $t$.
+- $E_{t+1}$ is the updated expected value.
+- $V_t$ is the valence observed at trial $t$.
+- $\alpha$ is the learning rate.
+  - Participants weigh either the long-run average outcomes or pay more attention to the recent outcomes
+  - From the original EV IGT model ([Busemeyer & Stout, 2002](https://psycnet.apa.org/fulltext/2002-17916-003.html))
+
+## 3. Sensitivity Parameter
+
+The sensitivity parameter $S$ is a function of the trial number $t$ and a parameter $c$ that controls its change over training:
+
+$$
+S_t = \left( \frac{t}{10} \right)^c
+$$
+
+#### where:
+- $t$ is the current trial number.
+- $c$ is the parameter that controls the sensitivity parameter $S$ over training.
+  - From the original EV IGT model ([Busemeyer & Stout, 2002](https://psycnet.apa.org/fulltext/2002-17916-003.html))
+
+## 4. Choice Probability
+
+The probability of choosing to play is given by a logistic function:
+
+$$
+P(\text{play}) = \frac{1}{1 + e^{-(S_t \cdot E_t)}}
+$$
+
+#### where:
+- $P(\text{play})$ is the probability of choosing to play the deck.
+- $S_t$ is the sensitivity parameter at trial $t$.
+- $E_t$ is the expected value at trial $t$.
+
+## 5. Choice Outcome
+
+The actual binary choice is modeled using a Bernoulli distribution:
+
+$$
+\text{Choice} \sim \text{Bernoulli}(P(\text{play}))
+$$
+
+#### where:
+- If the outcome is 1, the participant decides to play.
+- If the outcome is 0, the participant decides to skip.
+
+
+# EV+DDM Model
+## 1. Valence Calculation
+
+The valence $V$ is computed from the net outcome $R$ using attention weights $w_+$ and $w_-$:
+
+$$
+V = w_+ \cdot \max(0, R) + w_- \cdot \min(0, R)
+$$
+
+#### where:
+* $w_+$ is the weight for positive values (gains).
+* $w_-$ is the weight for negative values (losses). 
+* $R$ is the net outcome (total reward or loss).
+  + Participants are only shown the **net outcome**.
+  
+## 2. Expectation Update Rule
+
+The expectation $E$ is updated based on the observed valence $V$ and the update rate $\alpha$:
+
+$$
+E_{D_{t+1}} = (1 - \alpha) \cdot E_{D_t} + \alpha \cdot (V_t - E_{D_t})
+$$
+
+#### where:
+- $E_t$ is the expected value at trial $t$.
+- $E_{t+1}$ is the updated expected value.
+- $V_t$ is the valence observed at trial $t$.
+- $\alpha$ is the learning rate.
+  - Participants weigh either the long-run average outcomes or pay more attention to the recent outcomes
+  - From the original EV IGT model ([Busemeyer & Stout, 2002](https://psycnet.apa.org/fulltext/2002-17916-003.html))
+
+## 3. Sensitivity Parameter
+
+The sensitivity parameter $S$ is a function of the trial number $t$ and a parameter $c$ that controls its change over training:
+
+$$
+S_t = \left( \frac{t}{10} \right)^c
+$$
+
+#### where:
+- $t$ is the current trial number.
+- $c$ is the parameter that controls the sensitivity parameter $S$ over training.
+  - From the original EV IGT model ([Busemeyer & Stout, 2002](https://psycnet.apa.org/fulltext/2002-17916-003.html))
+
+## 4. Reaction Time Probability
+
+Reaction time is described by a Wiener first-passage time distribution:
+
+$$
+P(RT_t | Play) \sim WFPT[a, T_{er},z,d_t]
+$$
+
+#### where:
+- $P(RT_t | Play)$ is the probability of selecting to play with the observed RT
+- These are trial-independent parameters:
+  - $a$ is the boundary separation.
+  - $T_{er}$ is the non-decision time.
+  - $z$ is the starting point of the decision process.
+- $d_t$ or $Drift_t$ is the trial-dependent drift rate.
+
+Similarly, we can use the same variables for the pass option:
+
+$$
+P(RT_t | Pass) \sim WFPT[a, T_{er},1-z,-d_t]
+$$
+
+### Drift Parameter
+
+Trial-dependent drift parameter that is biased by the expectation of the current deck:
+
+$$
+Drift_t = E_t * S_t = E_{D_t} * \left( \frac{t}{10} \right)^c
+$$
+
+#### where:
+- $t$ is the current trial number.
+- $c$ is the parameter that controls the sensitivity parameter $S$ over training.
+  - From the original EV IGT model ([Busemeyer & Stout, 2002](https://psycnet.apa.org/fulltext/2002-17916-003.html))
+- $S_t$ scales the expectation for the deck helping to influence the drift to play on the given deck.
+
+
