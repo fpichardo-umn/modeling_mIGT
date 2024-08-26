@@ -11,13 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 # Load packages
 library(plyr)   #for revalue
 library(dplyr)  #for %>%
-library(ggplot2)
-library(gridExtra)
-library(grid)   #for textGrob
-library(kableExtra) #for knitr tables
 library(tidyr)
 library(here)
-library(foreign)
+library(rstan)
 
 # Directories
 PROJ_DIR            = file.path(here::here())
