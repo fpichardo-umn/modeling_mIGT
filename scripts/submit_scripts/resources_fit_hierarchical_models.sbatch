@@ -32,8 +32,11 @@ source ./scripts/configs/fit_params_${FIT_CONFIG}.conf
 source ./scripts/configs/data_params_${DATA_CONFIG}.conf
 
 # Run the R script with the configuration
-Rscript ./scripts/fit_hierarchical_models.R \
+Rscript ./fit_hierarchical_models.R \
   -m ${MODEL_NAME} \
+  -t ${MODEL_TYPE} \
+  -k ${TASK} \
+  -g ${GROUP_TYPE} \
   --n_subs ${n_subs} \
   --n_trials ${n_trials} \
   --RTbound_ms ${RTbound_ms} \
