@@ -47,6 +47,8 @@ MODEL_TYPE=${MODEL_TYPE:-fit}
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 CONFIG_DIR="${SCRIPT_DIR}/configs"
 R_SCRIPT="${SCRIPT_DIR}/fit_hierarchical_models.R"
+SUBMIT_SCRIPTS_DIR="${SCRIPT_DIR}/submit_scripts"
+SBATCH_SCRIPT="${SUBMIT_SCRIPTS_DIR}/resources_fit_hierarchical_models.sbatch"
 
 PROJ_DIR="${SCRIPT_DIR}/.."
 MODEL_DIR="${PROJ_DIR}/models/rds"
@@ -73,6 +75,10 @@ check_and_print "Data config file: ${CONFIG_DIR}/data_params_${DATA_CONFIG}.conf
 # Check R script
 [ -f "$R_SCRIPT" ]
 check_and_print "R script: $R_SCRIPT"
+
+# Check R script
+[ -f "$SBATCH_SCRIPT" ]
+check_and_print "SBATCH script: $SBATCH_SCRIPT"
 
 # Check data file
 [ -f "$DATA_FILE" ]
@@ -124,8 +130,9 @@ for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
     eval $(generate_r_call $MODEL_NAME "--dry_run")
   else
     job_id=$(sbatch --parsable \
-      --export=ALL,MODEL_NAME=$MODEL_NAME,FIT_CONFIG=$FIT_CONFIG,DATA_CONFIG=$DATA_CONFIG,USER_EMAIL=$USER_EMAIL,MODEL_TYPE=$MODEL_TYPE,TASK=$TASK,GROUP_TYPE=$GROUP_TYPE \
-      resources_fit_hierarchical_models.sh)
+      --job-name=$JOB_NAME \
+      --export=ALL,JOB_NAME=$JOB_NAME,MODEL_NAME=$MODEL_NAME,FIT_CONFIG=$FIT_CONFIG,DATA_CONFIG=$DATA_CONFIG,USER_EMAIL=$USER_EMAIL,MODEL_TYPE=$MODEL_TYPE,TASK=$TASK,GROUP_TYPE=$GROUP_TYPE 
+      $SBATCH_SCRIPT)
     if [ $? -eq 0 ]; then
       echo "Submitted job for model $MODEL_NAME with ID: $job_id"
     else

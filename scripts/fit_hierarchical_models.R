@@ -15,7 +15,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   rds_pathname <- file.path(file.path(MODELS_RDS_DIR, model_type), paste0(model_str, "_", model_type, ".rds"))
   stanmodel_arg <- readRDS(rds_pathname)
 
-  output_file <- sub('/models/', '/Data/', paste0(tools::file_path_sans_ext(rds_pathname), "_fit_output.rds"))
+  output_file <- sub('/models/', '/Data/', paste0(tools::file_path_sans_ext(rds_pathname), "_output.rds"))
   if (!file.exists(dirname(output_file))) {
     stop("Output folder does not exist. Expected path: ", output_file)
   }

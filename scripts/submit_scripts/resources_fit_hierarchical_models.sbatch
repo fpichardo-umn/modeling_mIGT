@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH -J fit_hierarchical_models
+#SBATCH -J ${JOB_NAME}
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=8
 #SBATCH --cpus-per-task=1
@@ -7,8 +7,8 @@
 #SBATCH --tmp=32gb
 #SBATCH -t 96:00:00
 #SBATCH --mail-type=ALL
-#SBATCH -o output_logs/fit_hierarchical_models_%A_%a.out
-#SBATCH -e output_logs/fit_hierarchical_models_%A_%a.err
+#SBATCH -o log_files/%x_%A_%a.out
+#SBATCH -e log_files/%x_%A_%a.err
 
 # Check if email is provided
 if [ -z "$USER_EMAIL" ]; then
@@ -32,7 +32,7 @@ source ./scripts/configs/fit_params_${FIT_CONFIG}.conf
 source ./scripts/configs/data_params_${DATA_CONFIG}.conf
 
 # Run the R script with the configuration
-Rscript ./fit_hierarchical_models.R \
+Rscript ./scripts/fit_hierarchical_models.R \
   -m ${MODEL_NAME} \
   -t ${MODEL_TYPE} \
   -k ${TASK} \
