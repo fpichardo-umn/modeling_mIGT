@@ -12,12 +12,13 @@ suppressPackageStartupMessages({
 })
 
 # Function to fit and save a model
-fit_and_save_model <- function(task, group_type, model_name, model_type, data_list, n_subs, n_trials, n_warmup, n_iter, n_chains, adapt_delta, max_treedepth, model_params, dry_run = FALSE) {
+fit_and_save_model <- function(task, group_type, model_name, model_type, data_list, n_subs, n_trials, n_warmup, n_iter, n_chains, adapt_delta, max_treedepth, model_params, dry_run = FALSE, checkpoint_interval = 3000) {
   model_str <- paste(task, group_type, model_name, sep="_")
   rds_pathname <- file.path(file.path(MODELS_RDS_DIR, model_type), paste0(model_str, "_", model_type, ".rds"))
   stanmodel_arg <- readRDS(rds_pathname)
 
   output_file <- sub('/models/', '/Data/', paste0(tools::file_path_sans_ext(rds_pathname), "_output.rds"))
+  checkpoint_file <- paste0(tools::file_path_sans_ext(output_file), "_checkpoint.rds")
   if (!file.exists(dirname(output_file))) {
     stop("Output folder does not exist. Expected path: ", output_file)
   }
@@ -40,6 +41,54 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   }
 
   cat("Fitting model:", model_str, "\n")
+  
+  # Check if there's a checkpoint to resume from
+  if (file.exists(checkpoint_file)) {
+    cat("Resuming from checkpoint\n")
+    checkpoint <- readRDS(checkpoint_file)
+    current_iter <- checkpoint$current_iter
+    fit <- checkpoint$fit
+    warmup_done <- checkpoint$warmup_done
+  } else {
+    current_iter <- 0
+    fit <- NULL
+    warmup_done <- FALSE
+  }
+  
+  total_iter <- n_warmup + n_iter
+  
+  while (current_iter < total_iter) {
+    remaining_iter <- min(checkpoint_interval, total_iter - current_iter)
+    
+    if (is.null(fit) || !warmup_done) {
+      # Initial run or warmup not complete
+      iter_to_run <- max(n_warmup, remaining_iter)
+      fit <- sampling(stanmodel_arg, data = data_list,
+                      iter = iter_to_run, warmup = n_warmup,
+                      chains = n_chains, cores = n_chains,
+                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
+                      refresh = 10)
+      warmup_done <- TRUE
+      current_iter <- iter_to_run
+    } else {
+      # Continue sampling post-warmup
+      new_samples <- sampling(stanmodel_arg, data = data_list,
+                              iter = remaining_iter, warmup = 0,
+                              chains = n_chains, cores = n_chains,
+                              control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
+                              init = rstan::get_last_draw(fit, inc_warmup = FALSE),
+                              refresh = 10)
+      
+      # Combine new samples with existing fit
+      fit <- rstan::sflist2stanfit(list(fit, new_samples))
+      current_iter <- current_iter + remaining_iter
+    }
+    
+    # Save checkpoint
+    saveRDS(list(current_iter = current_iter, fit = fit, warmup_done = warmup_done), file = checkpoint_file)
+    cat("Checkpoint saved at iteration", current_iter, "\n")
+  }
+  
   fit <- fit_stan_model(stanmodel_arg, data_list,
                         n_warmup = n_warmup, n_iter = n_iter + n_warmup,
                         n_chains = n_chains, adapt_delta = adapt_delta,
@@ -51,6 +100,11 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   
   cat("Saving fitted model to:", output_file, "\n")
   saveRDS(fit, file = output_file)
+  
+  # Remove checkpoint file after successful completion
+  if (file.exists(checkpoint_file) && file.exists(output_file)) {
+    file.remove(checkpoint_file)
+  }
 
   return(fit)
 }
@@ -103,7 +157,7 @@ set.seed(opt$seed)
 # Default data and parameters for each model
 model_defaults <- list(
   "igt_mod_group_hier_ddm" = list(
-    data = c("N", "Nplay", "Npass", "T", "Tsubj", "RTbound", "minRT", "RTpass", "RTplay"),
+    data = c("N", "Nplay", "Npass", "Nplay_max", "Npass_max", "T", "Tsubj", "RTbound", "minRT", "RTpass", "RTplay"),
     params = c("boundary", "tau", "beta", "drift")
   ),
   "igt_mod_group_hier_ev_ddm" = list(
