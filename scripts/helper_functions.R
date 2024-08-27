@@ -268,6 +268,8 @@ extract_sample_data <- function(data, data_params, n_trials = NULL, n_subs = NUL
            "outcome" = data_list$outcome <- if (is_group) as.matrix(create_matrix(data, "v_netchange", n_trials)) else as.vector(as.numeric(data$v_netchange)),
            "Nplay" = data_list$Nplay <- if (is_group) as.integer(rowSums(data_list$choice == 1, na.rm = TRUE)) else as.integer(sum(data$v_response == 2, na.rm = TRUE)),
            "Npass" = data_list$Npass <- if (is_group) as.integer(rowSums(data_list$choice == 0, na.rm = TRUE)) else as.integer(sum(data$v_response == 1, na.rm = TRUE)),
+           "Nplay_max" = data_list$Nplay_max <- if (is_group) max(as.integer(rowSums(data_list$choice == 1, na.rm = TRUE))),
+           "Npass_max" = data_list$Npass_max <- if (is_group) max(as.integer(rowSums(data_list$choice == 0, na.rm = TRUE))),
            "RT" = {
              data_list$RT <- if (is_group) as.matrix(create_matrix(data, "RT", n_trials)) else as.vector(as.numeric(data$RT))
              

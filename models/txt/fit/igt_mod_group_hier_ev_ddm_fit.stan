@@ -95,17 +95,17 @@ transformed parameters {
 
 model {
   // Hyperparameters
-  to_vector(mu_pr) ~ normal(0, 1);
-  to_vector(sigma) ~ normal(0, 1);
+  to_vector(mu_pr) ~ normal(0, 10);
+  to_vector(sigma) ~ cauchy(0, 5);
 
   // Priors
-  to_vector(boundary_pr)  ~ normal(0, 1);
-  to_vector(tau_pr)       ~ normal(0, 1);
-  to_vector(beta_pr)      ~ normal(0, 1);
-  to_vector(drift_con_pr) ~ normal(0, 1);
-  to_vector(wgt_pun_pr)   ~ normal(0, 1);
-  to_vector(wgt_rew_pr)   ~ normal(0, 1);
-  to_vector(update_pr)    ~ normal(0, 1);
+  to_vector(boundary_pr)  ~ normal(0, 10);
+  to_vector(tau_pr)       ~ normal(0, 5);
+  to_vector(beta_pr)      ~ normal(0, 5);
+  to_vector(drift_con_pr) ~ normal(0, 5);
+  to_vector(wgt_pun_pr)   ~ normal(0, 5);
+  to_vector(wgt_rew_pr)   ~ normal(0, 5);
+  to_vector(update_pr)    ~ normal(0, 5);
 
   // Initial subject-level deck expectations
   array[N] vector[4] ev;

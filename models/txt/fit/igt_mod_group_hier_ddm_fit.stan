@@ -2,6 +2,8 @@
 data {
   int<lower=1> 		   N;         // Number of subjects
   int<lower=1> 		   T;         // Max overall trials
+  int<lower=1> 		   Nplay_max; // Max (across subjects) number of play trials
+  int<lower=1> 		   Npass_max; // Max (across subjects) number of pass trials
   real<lower=0> 	   RTbound;   // Lower bound RT across all subjects (e.g., 0.1 second)
   int<lower=0> 		   Nplay[N];  // Number of play trials for each sub
   int<lower=0> 		   Npass[N];  // Number of pass trials for each sub
@@ -43,14 +45,14 @@ transformed parameters {
 
 model {
   // Hyperparameters
-  mu_pr ~ normal(0, 1);
-  sigma ~ normal(0, 1);
+  mu_pr ~ normal(0, 10);
+  sigma ~ cauchy(0, 5);
 
   // Priors
-  to_vector(boundary_pr) ~ normal(0, 1);
-  to_vector(tau_pr)      ~ normal(0, 1);
-  to_vector(beta_pr)     ~ normal(0, 1);
-  to_vector(drift)       ~ normal(0, 1);
+  to_vector(boundary_pr) ~ normal(0, 10);
+  to_vector(tau_pr)      ~ normal(0, 5);
+  to_vector(beta_pr)     ~ normal(0, 5);
+  to_vector(drift)       ~ normal(0, 10);
   
   // For each sub
   for (n in 1:N) { 
