@@ -66,8 +66,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
       fit <- sampling(stanmodel_arg, data = data_list,
                       iter = iter_to_run, warmup = n_warmup,
                       chains = n_chains, cores = n_chains,
-                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
-                      refresh = 10)
+                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth))
       warmup_done <- TRUE
       current_iter <- iter_to_run
     } else {
@@ -76,8 +75,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
                               iter = remaining_iter, warmup = 0,
                               chains = n_chains, cores = n_chains,
                               control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
-                              init = rstan::get_last_draw(fit, inc_warmup = FALSE),
-                              refresh = 10)
+                              init = rstan::get_last_draw(fit, inc_warmup = FALSE))
       
       # Combine new samples with existing fit
       fit <- rstan::sflist2stanfit(list(fit, new_samples))
