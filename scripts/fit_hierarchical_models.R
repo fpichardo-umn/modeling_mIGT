@@ -7,6 +7,8 @@ suppressPackageStartupMessages({
   library(rstan)
   library(posterior)
   library(foreign)
+  library(dplyr)
+  library(tidyr)
 })
 
 # Function to fit and save a model

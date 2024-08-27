@@ -129,6 +129,7 @@ for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
     source "${CONFIG_DIR}/data_params_${DATA_CONFIG}.conf"
     eval $(generate_r_call $MODEL_NAME "--dry_run")
   else
+    JOB_NAME="${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}"
     job_id=$(sbatch --parsable \
       --job-name=$JOB_NAME \
       --export=ALL,JOB_NAME=$JOB_NAME,MODEL_NAME=$MODEL_NAME,FIT_CONFIG=$FIT_CONFIG,DATA_CONFIG=$DATA_CONFIG,USER_EMAIL=$USER_EMAIL,MODEL_TYPE=$MODEL_TYPE,TASK=$TASK,GROUP_TYPE=$GROUP_TYPE \
