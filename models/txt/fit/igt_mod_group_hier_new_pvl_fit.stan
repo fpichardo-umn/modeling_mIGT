@@ -8,37 +8,40 @@ functions {
     // Define values
     real curUtil; // Current utility
     int curDeck; // Current deck
-    real curInfo;
+    vector[T] Info;
     vector[4] local_exploit = exploit;
     vector[4] local_explore = explore;
+    real decay_factor = exp(-A);
 
     // For each deck shown
-    for (t in 1: T) {
+    for (t in 1:T) {
       // Deck presented to sub
       curDeck = shown[t];
-
-      // Bernoulli distribution to decide whether to gamble on the current deck or not
-      // Use bernoulli_logit_lpmf for numerical stability
-      curInfo = (local_exploit[curDeck] + local_explore[curDeck]) * sensitivity[t];
-      target += bernoulli_logit_lpmf(choice[t] | curInfo);
+      
+      // EV and sensitivity
+      Info[t] = (local_exploit[curDeck] + local_explore[curDeck]) * sensitivity[t];
+      
+      // Update exploration values
+      local_explore += (exp_max - local_explore)*explore_upd;
 
       // Compute utility
       curUtil = pow(abs(outcome[t]), alpha) * (outcome[t] > 0 ? 1 : lambda) * choice[t];
 
       // Decay-RL
-      local_exploit *= pow(e(), -A);
+      local_exploit *= decay_factor;
 
       // Update expected values
       real pe = curUtil - local_exploit[curDeck];
       local_exploit[curDeck] += pe * (pe > 0 ? update_pe : 1 - update_pe) * choice[t];
 
-      // Update exploration values
-      local_explore += (exp_max - local_explore)*explore_upd;
-
       if (choice[t] == 1) {
         local_explore[curDeck] = 0;
       }
     }
+    // Bernoulli distribution to decide whether to gamble on the current deck or not
+    // Use bernoulli_logit_lpmf for numerical stability
+    target += bernoulli_logit_lpmf(choice | Info);
+    
     return append_row(local_exploit, local_explore);
   }
 }

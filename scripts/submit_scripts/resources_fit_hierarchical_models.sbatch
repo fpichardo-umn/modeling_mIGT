@@ -7,8 +7,8 @@
 #SBATCH --tmp=32gb
 #SBATCH -t 96:00:00
 #SBATCH --mail-type=ALL
-#SBATCH -o log_files/${MODEL_TYPE}/%x_%A_%a.out
-#SBATCH -e log_files/${MODEL_TYPE}/%x_%A_%a.err
+#SBATCH -o log_files/fit/%x_%A_%a.out
+#SBATCH -e log_files/fit/%x_%A_%a.err
 
 # Check if email is provided
 if [ -z "$USER_EMAIL" ]; then

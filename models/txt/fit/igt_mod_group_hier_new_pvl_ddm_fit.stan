@@ -1,48 +1,57 @@
 functions {
   vector igt_model_lp(
-			int[] choice, int[] shown, real[] outcome,
-			real[] RT, int T, vector exploit, vector explore,
-			vector sensitivity, real A, real update_pe,
-			real lambda, real alpha, real explore_upd,
-			real exp_max, real boundary, real tau, real beta
-			){
-    // Define values
-    real curUtil; // Current utility
-    int curDeck; // Current deck
-    real curDrift; // Current drift
+    array[] int choice, array[] int shown, array[] real outcome,
+    array[] real RT, int T, vector exploit, vector explore,
+    vector sensitivity, real A, real update_pe,
+    real lambda, real alpha, real explore_upd,
+    real exp_max, real boundary, real tau, real beta
+    ) {
+    vector[T] drift_rates;
     vector[4] local_exploit = exploit;
     vector[4] local_explore = explore;
-
-    for (t in 1:T){
-      // Deck presented to sub
-      curDeck = shown[t];
-
-      // Drift diffusion process
-      curDrift = (local_exploit[curDeck] + local_explore[curDeck]) * sensitivity[t]; // Drift scaling
-
-      // Update exploration values
-      local_explore += (exp_max - local_explore)*explore_upd;
-
-      // Model both RT and choice
+    array[T] int play_indices;
+    array[T] int pass_indices;
+    int play_count = 0;
+    int pass_count = 0;
+    real decay_factor = exp(-A);
+    
+    for (t in 1:T) {
+      int curDeck = shown[t];
+      
+      // Compute drift rate
+      drift_rates[t] = (local_exploit[curDeck] + local_explore[curDeck]) * sensitivity[t];
+      
+      // Update exploration values for all decks
+      local_explore += (exp_max - local_explore) * explore_upd;
+      
+      // Store indices for play and pass
       if (choice[t] == 1) {
-        target += wiener_lpdf(RT[t] | boundary, tau, beta, curDrift);
+        play_count += 1;
+        play_indices[play_count] = t;
         local_explore[curDeck] = 0;
       } else {
-        target += wiener_lpdf(RT[t] | boundary, tau, 1-beta, -curDrift);
+        pass_count += 1;
+        pass_indices[pass_count] = t;
       }
-
-      target += bernoulli_logit_lpmf(choice[t] | curDrift);
-
+      
       // Compute utility
-      curUtil = pow(abs(outcome[t]), alpha) * (outcome[t] > 0 ? 1 : lambda) * choice[t];
-
-      // Decay-RL
-      local_exploit *= pow(e(), -A);
-
-      // Update expected values
+      real curUtil = pow(fabs(outcome[t]), alpha) * (outcome[t] > 0 ? 1 : lambda) * choice[t];
+      
+      // Decay-RL for all decks
+      local_exploit *= decay_factor;
+      
+      // Update expected values for the chosen deck
       real pe = curUtil - local_exploit[curDeck];
       local_exploit[curDeck] += pe * (pe > 0 ? update_pe : 1 - update_pe) * choice[t];
     }
+    
+    // Compute log probability for RTs
+    target += wiener_lpdf(RT[play_indices[:play_count]] | boundary, tau, beta, drift_rates[play_indices[:play_count]]);
+    target += wiener_lpdf(RT[pass_indices[:pass_count]] | boundary, tau, 1-beta, -drift_rates[pass_indices[:pass_count]]);
+    
+    // Compute log probability for choices
+    target += bernoulli_logit_lpmf(choice | drift_rates);
+    
     return append_row(local_exploit, local_explore);
   }
 }

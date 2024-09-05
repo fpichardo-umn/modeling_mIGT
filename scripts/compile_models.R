@@ -1,9 +1,11 @@
 #!/usr/bin/env Rscript
 
 # Load required libraries
-library(optparse)
-library(here)
-library(rstan)
+suppressPackageStartupMessages({
+  library(optparse)
+  library(here)
+  library(rstan)
+})
 
 # Set up command line options
 option_list <- list(

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Load modules
+module load R/4.2.0-rocky8
+
 # Function to print usage
 print_usage() {
   echo "Usage: $0 -m <model_names> -f <fit_config> -d <data_config> -e <email> -t <model_type> -k <task> -g <group_type> [-n]"
@@ -84,6 +87,9 @@ check_and_print "SBATCH script: $SBATCH_SCRIPT"
 [ -f "$DATA_FILE" ]
 check_and_print "Data file: $DATA_FILE"
 
+# Check data file
+check_and_print "Model type: $MODEL_TYPE"
+
 # Check output directory
 [ -d "$OUTPUT_DIR" ] && [ -w "$OUTPUT_DIR" ]
 check_and_print "Output directory (exists and writable): $OUTPUT_DIR"
@@ -105,10 +111,6 @@ generate_r_call() {
 # Check model files and submit jobs
 for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
   MODEL_FILE="${MODEL_DIR}/${MODEL_TYPE}/${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}.rds"
-  if [ ! -f "$MODEL_FILE" ]; then
-    echo "[FAIL] Model file not found: $MODEL_FILE"
-    continue
-  fi
   echo "[OK] Model file: $MODEL_FILE"
 
   if $DRY_RUN; then
@@ -147,4 +149,5 @@ if $DRY_RUN; then
   echo "This was a dry run. No jobs were actually submitted."
 else
   echo "Use 'squeue -u $USER' to monitor your jobs."
+  echo "Use 'squeue -l --me' to monitor your jobs."
 fi

@@ -5,16 +5,14 @@ data {
   real<lower=0> 	   RTbound;   // Lower bound RT across all subjects (e.g., 0.1 second)
   int<lower=0> 		   Nplay[N];  // Number of play trials for each sub
   int<lower=0> 		   Npass[N];  // Number of pass trials for each sub
-  array[N, Nplay_max] real RTplay;    // Reaction times for play trials
-  array[N, Npass_max] real RTpass;    // Reaction times for sub trials
-  vector[N] 		   minRT;     // Minimum RT for each sub
+  array[N, T] real RTplay;      // Reaction times for play trials
+  array[N, T] real RTpass;      // Reaction times for sub trials
+  vector[N] 		   minRT;       // Minimum RT for each sub
 }
 
 transformed data{
   vector[N] minRTdiff    = minRT - RTbound;
   real      RTmax        = max(minRT);
-  int       Nplay_max    = max(Nplay); // Max (across subjects) number of play trials
-  int       Npass_max    = max(Npass); // Max (across subjects) number of pass trials
 } 
 
 parameters {

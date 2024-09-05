@@ -1,44 +1,44 @@
 functions {
   // Fitting EV DDM model
   vector igt_model_lp(
-			array[] int choice, array[] int shown, array[] real outcome,
-			array[] real RT, vector ev, int Tsub,
-			vector sensitivity, real update, real wgt_pun,
-			real wgt_rew, real boundary, real tau, real beta
-			) {
-    // Define values
-    real      curUtil;   // Current utility
-    int       curDeck;   // Current deck
-    real      EV2update; // Current EV to update
-    real      curDrift;  // Current drift
+    array[] int choice, array[] int shown, array[] real outcome,
+    array[] real RT, vector ev, int Tsub,
+    vector sensitivity, real update, real wgt_pun,
+    real wgt_rew, real boundary, real tau, real beta
+    ) {
     vector[4] local_ev = ev;
-
-    // For each deck shown
-    for (t in 1: Tsub) {
-      // Deck presented to sub
-      curDeck = shown[t];
-
-      // EV to update
-      EV2update = local_ev[curDeck];
-
-      // Drift diffusion process
-      curDrift = EV2update * sensitivity[t]; // Drift scaling
-
-      // Model both RT and choice
+    vector[Tsub] drift_rates;
+    array[Tsub] int play_indices;
+    array[Tsub] int pass_indices;
+    int play_count = 0;
+    int pass_count = 0;
+    
+    // Compute drift rates and update local_ev
+    for (t in 1:Tsub) {
+      int curDeck = shown[t];
+      drift_rates[t] = local_ev[curDeck] * sensitivity[t];
+      
+      // Update local_ev
+      real curUtil = ((outcome[t] > 0 ? wgt_rew : wgt_pun)) * outcome[t] * choice[t];
+      local_ev[curDeck] += (curUtil - 2 * local_ev[curDeck]) * update * choice[t];
+      
+      // Store indices for play and pass
       if (choice[t] == 1) {
-        target += wiener_lpdf(RT[t] | boundary, tau, beta, curDrift);
+        play_count += 1;
+        play_indices[play_count] = t;
       } else {
-        target += wiener_lpdf(RT[t] | boundary, tau, 1-beta, -curDrift);
+        pass_count += 1;
+        pass_indices[pass_count] = t;
       }
-
-      target += bernoulli_logit_lpmf(choice[t] | curDrift);
-
-      // Compute utility
-      curUtil = ((outcome[t] > 0 ? wgt_rew : wgt_pun)) * outcome[t] * choice[t]; // choice 0, curUtil 0
-
-      // Update expected values
-      local_ev[curDeck] += (curUtil - 2 * EV2update) * update * choice[t]; // choice 0, update 0
     }
+    
+    // Compute log probability for RTs
+    target += wiener_lpdf(RT[play_indices[:play_count]] | boundary, tau, beta, drift_rates[play_indices[:play_count]]);
+    target += wiener_lpdf(RT[pass_indices[:pass_count]] | boundary, tau, 1-beta, -drift_rates[pass_indices[:pass_count]]);
+    
+    // Compute log probability for choices
+    target += bernoulli_logit_lpmf(choice | drift_rates);
+    
     return local_ev;
   }
 }

@@ -7,28 +7,29 @@ functions {
     // Define values
     real curUtil;   // Current utility
     int  curDeck;   // Current deck
-    real EV2update; // Current EV to update
+    vector[Tsub] Info;
 
     // Accumulation
     vector[4] local_ev = ev;
 
     // For each deck shown
-    for (t in 1: Tsub) {
+    for (t in 1:Tsub) {
       // Deck presented to sub
       curDeck = shown[t];
 
-      // EV to update
-      EV2update = local_ev[curDeck];
-
-      // Bernoulli distribution to decide whether to play the current deck or not
-      target += bernoulli_logit_lpmf(choice[t] | sensitivity[t] * EV2update);
+      // EV and sensitivity
+      Info[t] = sensitivity[t] * local_ev[curDeck];
 
       // Compute utility
       curUtil = ((outcome[t] > 0 ? wgt_rew : wgt_pun)) * outcome[t] * choice[t]; // choice 0, util 0
 
       // Update expected values
-      local_ev[curDeck] += (curUtil - 2 * EV2update) * update * choice[t]; // choice 0, update 0
+      local_ev[curDeck] += (curUtil - 2 * local_ev[curDeck]) * update * choice[t]; // choice 0, update 0
     }
+    
+    // Bernoulli distribution to decide whether to play the current deck or not
+    target += bernoulli_logit_lpmf(choice | Info);
+    
     return local_ev;
   }
 }
