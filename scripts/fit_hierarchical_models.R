@@ -41,6 +41,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   }
 
   cat("Fitting model:", model_str, "\n")
+  
   # Check if there's a checkpoint to resume from
   if (file.exists(checkpoint_file)) {
     cat("Resuming from checkpoint\n")
@@ -64,41 +65,55 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
       iter_to_run <- max(n_warmup + 1, remaining_iter)  # Ensure iter > warmup
       warmup_to_run <- min(n_warmup, iter_to_run - 1)   # Ensure warmup < iter
       fit <- sampling(stanmodel_arg, data = data_list,
-                      iter = iter_to_run, warmup = warmup_to_run,
+                      iter = iter_to_run, warmup = n_warmup,
                       chains = n_chains, cores = n_chains,
-                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
-                      refresh = ceiling(remaining_iter / 10))
+                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth))
       warmup_done <- TRUE
       current_iter <- iter_to_run
     } else {
-      # Continue sampling
+      # Continue sampling post-warmup
+      last_draws <- rstan::get_last_draw(fit, inc_warmup = FALSE)
+      init_values <- lapply(1:n_chains, function(i) last_draws[i,])
+      
       new_samples <- sampling(stanmodel_arg, data = data_list,
                               iter = remaining_iter, warmup = 0,
                               chains = n_chains, cores = n_chains,
                               control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
-                              init = lapply(1:n_chains, function(i) rstan::extract(fit, permuted = FALSE)[nrow(rstan::extract(fit, permuted = FALSE)),i,]),
-                              refresh = ceiling(remaining_iter / 10))
+                              init = init_values)
       
       # Combine new samples with existing fit
       fit <- rstan::sflist2stanfit(list(fit, new_samples))
+      current_iter <- current_iter + remaining_iter
     }
-    
-    current_iter <- current_iter + remaining_iter
     
     # Save checkpoint
     saveRDS(list(current_iter = current_iter, fit = fit, warmup_done = warmup_done), file = checkpoint_file)
     cat("Checkpoint saved at iteration", current_iter, "\n")
   }
   
+  # Add aditional relevant info
+  fit = list(
+    fit = fit,
+    n_warmup = n_warmup,
+    n_iter = n_iter,
+    n_chains = n_chains,
+    adapt_delta = adapt_delta,
+    max_treedepth = max_treedepth,
+    tss = (n_iter - n_warmup) * n_chains,
+    all_params = names(fit),
+    list_params = unique(gsub("\\[.*?\\]", "", names(fit))),
+    samples = rstan::extract(fit)
+  )
+  
   cat("Extracting parameters\n")
-  fit$params <- extract_params(rstan::extract(fit), n_subs, main_params_vec = model_params)
+  fit$params <- extract_params(rstan::extract(fit$fit), n_subs, main_params_vec = model_params)
   fit$params <- unname(fit$params)
   
   cat("Saving fitted model to:", output_file, "\n")
   saveRDS(fit, file = output_file)
   
   # Remove checkpoint file after successful completion
-  if (file.exists(checkpoint_file)) {
+  if (file.exists(checkpoint_file) && file.exists(output_file)) {
     file.remove(checkpoint_file)
   }
 
@@ -153,7 +168,7 @@ set.seed(opt$seed)
 # Default data and parameters for each model
 model_defaults <- list(
   "igt_mod_group_hier_ddm" = list(
-    data = c("N", "Nplay", "Npass", "T", "Tsubj", "RTbound", "minRT", "RTpass", "RTplay"),
+    data = c("N", "Nplay", "Npass", "Nplay_max", "Npass_max", "T", "Tsubj", "RTbound", "minRT", "RTpass", "RTplay"),
     params = c("boundary", "tau", "beta", "drift")
   ),
   "igt_mod_group_hier_ev_ddm" = list(

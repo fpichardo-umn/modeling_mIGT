@@ -75,7 +75,7 @@ transformed parameters {
   vector<lower=0, upper=1>[N]  exp_upd;
   vector<lower=0, upper=1>[N]  lambda;
   vector<lower=0, upper=2>[N]  alpha;
-  vector<lower=0, upper=1>[N]  A;
+  vector<lower=0, upper=3>[N]  A; // Decay as high as only 5% of a trace remaining
   vector<lower=0, upper=1>[N]  update_pe;
   vector<lower=0>[N]           exp_max;
   
@@ -83,23 +83,23 @@ transformed parameters {
   exp_upd   = 1 - inv_logit(mu_pr[1] + sigma[1]*con_pr);
   lambda    = inv_logit(mu_pr[2] + sigma[2]*lambda_pr);
   alpha     = inv_logit(mu_pr[3] + sigma[3]*alpha_pr);
-  A         = inv_logit(mu_pr[4] + sigma[4]*A_pr);
+  A         = inv_logit(mu_pr[4] + sigma[4]*A_pr) * 3;
   update_pe = inv_logit(mu_pr[5] + sigma[5]*update_pe_pr);
   exp_max   = exp(inv_logit(mu_pr[6] + sigma[6]*exp_max_pr) * 4);
 }
 
 model {
   // Hyperparameters
-  mu_pr ~ normal(0, 1);
-  sigma ~ normal(0, 1);
+  mu_pr ~ normal(0, 10);
+  sigma ~ cauchy(0, 5);
 
   // Individual parameters
-  con_pr       ~ normal(0, 1);
-  lambda_pr    ~ normal(0, 1);
-  alpha_pr     ~ normal(0, 1);
-  A_pr         ~ normal(0, 1);
-  update_pe_pr ~ normal(0, 1);
-  exp_max_pr   ~ normal(0, 1);
+  con_pr       ~ normal(0, 5);
+  lambda_pr    ~ normal(0, 5);
+  alpha_pr     ~ normal(0, 5);
+  A_pr         ~ normal(0, 5);
+  update_pe_pr ~ normal(0, 5);
+  exp_max_pr   ~ normal(0, 10);
 
   // Initial subject-level deck expectations
   array[N] vector[4] exploit;

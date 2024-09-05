@@ -77,7 +77,7 @@ transformed parameters {
   real<lower=0, upper=1>  	   exp_upd;
   real<lower=0, upper=1>  	   lambda;
   real<lower=0, upper=2>  	   alpha;
-  real<lower=0, upper=1>  	   A;
+  real<lower=0, upper=3>  	   A; // Decay as high as only 5% of a trace remaining
   real<lower=0, upper=1>  	   update_pe;
   real<lower=0>  	  	   exp_max;
 
@@ -88,7 +88,7 @@ transformed parameters {
   exp_upd   = 1 - inv_logit(drift_con_pr); // Related to the inverse of the consistency
   lambda    = inv_logit(lambda_pr);
   alpha     = inv_logit(alpha_pr);
-  A         = inv_logit(A_pr);
+  A         = inv_logit(A_pr) * 3;
   update_pe = inv_logit(update_pe_pr);
   exp_max   = exp(inv_logit(exp_max_pr) * 4);
 }
