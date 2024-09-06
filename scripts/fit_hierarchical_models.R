@@ -43,7 +43,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   cat("Fitting model:", model_str, "\n")
   
   # Create a temporary file for Stan output
-  temp_file <- tempfile(fileext = ".csv")
+  temp_files <- lapply(1:n_chains, function(chain) generate_temp_filename(model_str, chain))
   
   # Check if there's a checkpoint to resume from
   if (file.exists(checkpoint_file)) {
@@ -52,7 +52,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
     current_iter <- checkpoint$current_iter
     accumulated_samples <- checkpoint$accumulated_samples
     step_size <- checkpoint$step_size
-    inv_metric <- checkpoint$inv_metric
+    inv_metric <- checkpoint$inv_metrics
     warmup_done <- checkpoint$warmup_done
   } else {
     current_iter <- 0
@@ -74,11 +74,11 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
                       iter = iter_to_run, warmup = n_warmup,
                       chains = n_chains, cores = n_chains,
                       control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
-                      sample_file = temp_file, refresh = ceiling(iter_to_run/10))
+                      sample_file = temp_files, refresh = ceiling(iter_to_run/10))
       
       # Extract step size and inverse metric after warmup
       step_size <- get_stepsize(fit)
-      inv_metric <- extract_inv_metric(temp_file)
+      inv_metrics <- sapply(temp_files, extract_inv_metric)
       warmup_done <- TRUE
       
       new_samples <- rstan::extract(fit, permuted = FALSE, inc_warmup = FALSE)
@@ -93,7 +93,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
                       iter = remaining_iter, warmup = 0,
                       chains = n_chains, cores = n_chains,
                       control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth,
-                                     adapt_engaged = FALSE, stepsize = step_size, inv_metric = inv_metric),
+                                     adapt_engaged = FALSE, stepsize = step_size, inv_metric = inv_metrics),
                       init = init_values, refresh = ceiling(remaining_iter/10))
       
       new_samples <- rstan::extract(fit, permuted = FALSE, inc_warmup = FALSE)
@@ -146,8 +146,8 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   }
   
   # Clean up the temporary file
-  if (file.exists(temp_file)) {
-    file.remove(temp_file)
+  if (file.exists(temp_files[1])) {
+    sapply(temp_files, file.remove)
   }
 
   return(fit)

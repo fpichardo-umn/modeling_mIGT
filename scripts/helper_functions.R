@@ -6,6 +6,10 @@ suppressPackageStartupMessages({
 })
 
 ## Functions
+generate_temp_filename <- function(output_file, chain) {
+  paste0(tools::file_path_sans_ext(output_file), "_chain", chain, "temp.csv")
+}
+
 get_stepsize <- function(fit) {
   # Extract the step size from the fit object
   sapply(get_sampler_params(fit), function(x) x[nrow(x), "stepsize__"])
