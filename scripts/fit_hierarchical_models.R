@@ -72,8 +72,9 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
       current_iter <- iter_to_run
     } else {
       # Continue sampling post-warmup
-      last_draws <- rstan::get_last_draw(fit, inc_warmup = FALSE)
-      init_values <- lapply(1:n_chains, function(i) last_draws[i,])
+      last_draws <- rstan::extract(fit, permuted = FALSE, inc_warmup = FALSE)
+      last_draws <- last_draws[dim(last_draws)[1],,]  # Get the last iteration for all chains
+      init_values <- lapply(1:n_chains, function(i) as.list(last_draws[i,]))
       
       new_samples <- sampling(stanmodel_arg, data = data_list,
                               iter = remaining_iter, warmup = 0,
