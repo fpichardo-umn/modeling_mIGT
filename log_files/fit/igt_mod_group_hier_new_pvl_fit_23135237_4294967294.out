@@ -1,0 +1,39 @@
+Preparing data for igt_mod_group_hier_new_pvl 
+Preparing data for igt_mod_group_hier_new_pvl 
+Fitting model: igt_mod_group_hier_new_pvl 
+
+SAMPLING FOR MODEL 'igt_mod_group_hier_new_pvl_fit' NOW (CHAIN 2).
+
+SAMPLING FOR MODEL 'igt_mod_group_hier_new_pvl_fit' NOW (CHAIN 3).
+
+SAMPLING FOR MODEL 'igt_mod_group_hier_new_pvl_fit' NOW (CHAIN 1).
+
+SAMPLING FOR MODEL 'igt_mod_group_hier_new_pvl_fit' NOW (CHAIN 4).
+Chain 2: 
+Chain 2: Gradient evaluation took 0.19236 seconds
+Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1923.6 seconds.
+Chain 2: Adjust your expectations accordingly!
+Chain 2: 
+Chain 2: 
+Chain 3: 
+Chain 3: Gradient evaluation took 0.194237 seconds
+Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1942.37 seconds.
+Chain 3: Adjust your expectations accordingly!
+Chain 3: 
+Chain 3: 
+Chain 4: 
+Chain 4: Gradient evaluation took 0.190456 seconds
+Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1904.56 seconds.
+Chain 4: Adjust your expectations accordingly!
+Chain 4: 
+Chain 4: 
+Chain 1: 
+Chain 1: Gradient evaluation took 0.3126 seconds
+Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 3126 seconds.
+Chain 1: Adjust your expectations accordingly!
+Chain 1: 
+Chain 1: 
+Chain 4: Iteration:    1 / 1001 [  0%]  (Warmup)
+Chain 2: Iteration:    1 / 1001 [  0%]  (Warmup)
+Chain 1: Iteration:    1 / 1001 [  0%]  (Warmup)
+Chain 3: Iteration:    1 / 1001 [  0%]  (Warmup)

@@ -42,16 +42,23 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
 
   cat("Fitting model:", model_str, "\n")
   
+  # Create a temporary file for Stan output
+  temp_file <- tempfile(fileext = ".csv")
+  
   # Check if there's a checkpoint to resume from
   if (file.exists(checkpoint_file)) {
     cat("Resuming from checkpoint\n")
     checkpoint <- readRDS(checkpoint_file)
     current_iter <- checkpoint$current_iter
-    fit <- checkpoint$fit
+    accumulated_samples <- checkpoint$accumulated_samples
+    step_size <- checkpoint$step_size
+    inv_metric <- checkpoint$inv_metric
     warmup_done <- checkpoint$warmup_done
   } else {
     current_iter <- 0
-    fit <- NULL
+    accumulated_samples <- list()
+    step_size <- NULL
+    inv_metric <- NULL
     warmup_done <- FALSE
   }
   
@@ -60,50 +67,70 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   while (current_iter < total_iter) {
     remaining_iter <- min(checkpoint_interval, total_iter - current_iter)
     
-    if (is.null(fit) || !warmup_done) {
+    if (!warmup_done) {
       # Initial run or warmup not complete
       iter_to_run <- max(n_warmup + 1, remaining_iter)  # Ensure iter > warmup
-      warmup_to_run <- min(n_warmup, iter_to_run - 1)   # Ensure warmup < iter
       fit <- sampling(stanmodel_arg, data = data_list,
                       iter = iter_to_run, warmup = n_warmup,
                       chains = n_chains, cores = n_chains,
-                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth))
+                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
+                      sample_file = temp_file, refresh = ceiling(iter_to_run/10))
+      
+      # Extract step size and inverse metric after warmup
+      step_size <- get_stepsize(fit)
+      inv_metric <- extract_inv_metric(temp_file)
       warmup_done <- TRUE
+      
+      new_samples <- rstan::extract(fit, permuted = FALSE, inc_warmup = FALSE)
       current_iter <- iter_to_run
     } else {
       # Continue sampling post-warmup
-      last_draws <- rstan::extract(fit, permuted = FALSE, inc_warmup = FALSE)
+      last_draws <- accumulated_samples[[length(accumulated_samples)]]
       last_draws <- last_draws[dim(last_draws)[1],,]  # Get the last iteration for all chains
       init_values <- lapply(1:n_chains, function(i) as.list(last_draws[i,]))
       
-      new_samples <- sampling(stanmodel_arg, data = data_list,
-                              iter = remaining_iter, warmup = 0,
-                              chains = n_chains, cores = n_chains,
-                              control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
-                              init = init_values)
+      fit <- sampling(stanmodel_arg, data = data_list,
+                      iter = remaining_iter, warmup = 0,
+                      chains = n_chains, cores = n_chains,
+                      control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth,
+                                     adapt_engaged = FALSE, stepsize = step_size, inv_metric = inv_metric),
+                      init = init_values, refresh = ceiling(remaining_iter/10))
       
-      # Combine new samples with existing fit
-      fit <- rstan::sflist2stanfit(list(fit, new_samples))
-      current_iter <- current_iter + remaining_iter
+      new_samples <- rstan::extract(fit, permuted = FALSE, inc_warmup = FALSE)
+      current_iter <- current_iter + dim(new_samples)[1]
     }
     
+    # Accumulate new samples
+    accumulated_samples <- c(accumulated_samples, list(new_samples))
+    
     # Save checkpoint
-    saveRDS(list(current_iter = current_iter, fit = fit, warmup_done = warmup_done), file = checkpoint_file)
+    saveRDS(list(current_iter = current_iter, 
+                 accumulated_samples = accumulated_samples, 
+                 step_size = step_size, 
+                 inv_metric = inv_metric,
+                 warmup_done = warmup_done), 
+            file = checkpoint_file)
     cat("Checkpoint saved at iteration", current_iter, "\n")
   }
   
-  # Add aditional relevant info
+  # Combine all accumulated samples into a single array
+  all_samples <- do.call(abind::abind, c(accumulated_samples, list(along = 1)))
+  
+  # Create a stanfit-like object from accumulated samples
+  final_fit <- create_stanfit_like_object(all_samples, stanmodel_arg, n_warmup, n_chains)
+  
+  # Add additional relevant info
   fit = list(
-    fit = fit,
+    fit = final_fit,
     n_warmup = n_warmup,
     n_iter = n_iter,
     n_chains = n_chains,
     adapt_delta = adapt_delta,
     max_treedepth = max_treedepth,
     tss = (n_iter - n_warmup) * n_chains,
-    all_params = names(fit),
-    list_params = unique(gsub("\\[.*?\\]", "", names(fit))),
-    samples = rstan::extract(fit)
+    all_params = names(final_fit),
+    list_params = unique(gsub("\\[.*?\\]", "", names(final_fit))),
+    samples = rstan::extract(final_fit)
   )
   
   cat("Extracting parameters\n")
@@ -116,6 +143,11 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   # Remove checkpoint file after successful completion
   if (file.exists(checkpoint_file) && file.exists(output_file)) {
     file.remove(checkpoint_file)
+  }
+  
+  # Clean up the temporary file
+  if (file.exists(temp_file)) {
+    file.remove(temp_file)
   }
 
   return(fit)

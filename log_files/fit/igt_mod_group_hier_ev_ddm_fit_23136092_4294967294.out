@@ -4,26 +4,26 @@ Fitting model: igt_mod_group_hier_ev_ddm
 
 SAMPLING FOR MODEL 'igt_mod_group_hier_ev_ddm_fit' NOW (CHAIN 1).
 
-SAMPLING FOR MODEL 'igt_mod_group_hier_ev_ddm_fit' NOW (CHAIN 4).
-
 SAMPLING FOR MODEL 'igt_mod_group_hier_ev_ddm_fit' NOW (CHAIN 2).
+
+SAMPLING FOR MODEL 'igt_mod_group_hier_ev_ddm_fit' NOW (CHAIN 4).
 
 SAMPLING FOR MODEL 'igt_mod_group_hier_ev_ddm_fit' NOW (CHAIN 3).
 Chain 2: Rejecting initial value:
 Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
 Chain 3: Rejecting initial value:
 Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 3:   Stan can't start sampling from this initial value.
 Chain 3: Rejecting initial value:
 Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 3:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
 Chain 2: Rejecting initial value:
 Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 2:   Stan can't start sampling from this initial value.
@@ -31,8 +31,8 @@ Chain 2: Rejecting initial value:
 Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 2:   Stan can't start sampling from this initial value.
 Chain 3: 
-Chain 3: Gradient evaluation took 0.469412 seconds
-Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 4694.12 seconds.
+Chain 3: Gradient evaluation took 0.5587 seconds
+Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 5587 seconds.
 Chain 3: Adjust your expectations accordingly!
 Chain 3: 
 Chain 3: 
@@ -66,7 +66,7 @@ Chain 2:   Stan can't start sampling from this initial value.
 Chain 2: Rejecting initial value:
 Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 2:   Stan can't start sampling from this initial value.
-Chain 3: Iteration:    1 / 3000 [  0%]  (Warmup)
+Chain 3: Iteration:    1 / 1001 [  0%]  (Warmup)
 Chain 1: Rejecting initial value:
 Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 1:   Stan can't start sampling from this initial value.
@@ -94,45 +94,6 @@ Chain 4:   Stan can't start sampling from this initial value.
 Chain 4: Rejecting initial value:
 Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 4:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: Rejecting initial value:
-Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 2:   Stan can't start sampling from this initial value.
-Chain 2: 
-Chain 2: Gradient evaluation took 0.455497 seconds
-Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 4554.97 seconds.
-Chain 2: Adjust your expectations accordingly!
-Chain 2: 
-Chain 2: 
 Chain 4: Rejecting initial value:
 Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 4:   Stan can't start sampling from this initial value.
@@ -142,29 +103,52 @@ Chain 4:   Stan can't start sampling from this initial value.
 Chain 4: Rejecting initial value:
 Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 4:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
 Chain 4: 
-Chain 4: Gradient evaluation took 0.419772 seconds
-Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 4197.72 seconds.
+Chain 4: Gradient evaluation took 0.501289 seconds
+Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 5012.89 seconds.
 Chain 4: Adjust your expectations accordingly!
 Chain 4: 
 Chain 4: 
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: Rejecting initial value:
+Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2:   Stan can't start sampling from this initial value.
+Chain 2: 
+Chain 2: Gradient evaluation took 0.4705 seconds
+Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 4705 seconds.
+Chain 2: Adjust your expectations accordingly!
+Chain 2: 
+Chain 2: 
 Chain 1: Rejecting initial value:
 Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 1:   Stan can't start sampling from this initial value.
-Chain 2: Iteration:    1 / 3000 [  0%]  (Warmup)
-Chain 1: Rejecting initial value:
-Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 1:   Stan can't start sampling from this initial value.
-Chain 1: Rejecting initial value:
-Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 1:   Stan can't start sampling from this initial value.
-Chain 1: Rejecting initial value:
-Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-Chain 1:   Stan can't start sampling from this initial value.
-Chain 1: 
-Chain 1: Gradient evaluation took 0.405297 seconds
-Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 4052.97 seconds.
-Chain 1: Adjust your expectations accordingly!
-Chain 1: 
-Chain 1: 
-Chain 1: Iteration:    1 / 3000 [  0%]  (Warmup)
+Chain 2: Iteration:    1 / 1001 [  0%]  (Warmup)

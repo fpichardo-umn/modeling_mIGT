@@ -1,4 +1,228 @@
+# Load required libraries
+suppressPackageStartupMessages({
+  library(abind)
+  library(coda)
+  library(rstan)
+})
+
 ## Functions
+get_stepsize <- function(fit) {
+  # Extract the step size from the fit object
+  sapply(get_sampler_params(fit), function(x) x[nrow(x), "stepsize__"])
+}
+
+extract_inv_metric <- function(sample_file) {
+  # Extract the inverse metric from the Stan output file
+  csv_content <- readLines(sample_file)
+  mass_mat_line <- grep("^# Diagonal elements of inverse mass matrix:", csv_content, value = TRUE)
+  if (length(mass_mat_line) > 0) {
+    mass_mat_str <- sub("^# Diagonal elements of inverse mass matrix: ", "", mass_mat_line)
+    as.numeric(strsplit(mass_mat_str, ",")[[1]])
+  } else {
+    warning("Could not extract inverse metric.")
+    NULL
+  }
+}
+
+create_stanfit_like_object <- function(all_samples, stanmodel_arg, n_warmup, n_chains, 
+  sampler_params, adaptation_info, elapsed_time, 
+  init_values, seeds) {
+  n_iter <- dim(all_samples)[1] + n_warmup
+  n_flatsamples <- prod(dim(all_samples))
+  param_names <- colnames(all_samples)
+  
+  # Create the sim list
+  sim <- list(
+    samples = all_samples,
+    n_save = dim(all_samples)[1],
+    warmup2 = n_warmup,
+    n_iter = n_iter,
+    thin = 1,
+    n_flatsamples = n_flatsamples,
+    chains = n_chains,
+    n_save_warmup = 0,
+    warmup = n_warmup,
+    permutation = NULL,
+    pars_oi = param_names,
+    dims_oi = lapply(param_names, function(x) NULL),
+    fnames_oi = param_names,
+    n_flatnames = ncol(all_samples)
+  )
+  
+  # Create the model list
+  model <- list(
+    model_name = stanmodel_arg@model_name,
+    model_code = stanmodel_arg@model_code,
+    model_cpp = list(
+      model_cppname = stanmodel_arg@model_cpp$model_cppname,
+      model_cppcode = stanmodel_arg@model_cpp$model_cppcode
+    ),
+    dso = stanmodel_arg@dso
+  )
+  
+  # Create the stanfit object
+  stanfit <- structure(
+    list(
+      model_name = stanmodel_arg@model_name,
+      model_pars = param_names,
+      par_dims = lapply(param_names, function(x) NULL),
+      mode = 0,
+      sim = sim,
+      inits = init_values,
+      stan_args = list(),
+      stanmodel = stanmodel_arg,
+      date = date(),
+      .MISC = new.env()
+    ),
+    class = "stanfit"
+  )
+  
+  # Add methods to the stanfit object
+  stanfit$show <- function() {
+    cat("Stan model '", stanfit$model_name, "' with ", n_chains, 
+        " chains, each with iter=", n_iter, "; warmup=", n_warmup, "; thin=1\n", sep="")
+    cat("Total post-warmup draws: ", n_chains * (n_iter - n_warmup), "\n\n")
+    print(stanfit$summary())
+  }
+  
+  stanfit$print <- function(pars = NULL, probs = c(0.025, 0.25, 0.5, 0.75, 0.975), 
+                            digits_summary = 2, ...) {
+    cat("Stan model '", stanfit$model_name, "' with ", n_chains, 
+        " chains, each with iter=", n_iter, "; warmup=", n_warmup, "; thin=1\n", sep="")
+    cat("Total post-warmup draws: ", n_chains * (n_iter - n_warmup), "\n\n")
+    print(round(stanfit$summary(pars, probs), digits_summary))
+  }
+  
+  stanfit$plot <- function(pars = NULL, ...) {
+    if (is.null(pars)) pars <- param_names[1:min(8, length(param_names))]
+    samples <- stanfit$extract(pars, permuted = FALSE)
+    par(mfrow = c(length(pars), 2))
+    for (i in 1:length(pars)) {
+      ts.plot(samples[, , i], main = paste("Trace of", pars[i]), 
+              xlab = "Iteration", ylab = "Value")
+      plot(density(samples[, , i]), main = paste("Density of", pars[i]))
+    }
+  }
+  
+  stanfit$summary <- function(pars = NULL, probs = c(0.025, 0.25, 0.5, 0.75, 0.975), ...) {
+    if (is.null(pars)) pars <- param_names
+    samples <- stanfit$extract(pars, permuted = TRUE)
+    summary_stats <- lapply(pars, function(par) {
+      par_samples <- samples[[par]]
+      c(mean = mean(par_samples),
+        se_mean = sd(par_samples) / sqrt(length(par_samples)),
+        sd = sd(par_samples),
+        quantile(par_samples, probs = probs),
+        n_eff = effective_sample_size(par_samples),
+        Rhat = gelman_rubin(matrix(par_samples, ncol = n_chains)))
+    })
+    summary_matrix <- do.call(rbind, summary_stats)
+    rownames(summary_matrix) <- pars
+    colnames(summary_matrix) <- c("mean", "se_mean", "sd", names(probs), "n_eff", "Rhat")
+    return(summary_matrix)
+  }
+  
+  stanfit$extract <- function(pars = NULL, permuted = TRUE, inc_warmup = FALSE, include = TRUE) {
+    if (is.null(pars)) pars <- param_names
+    if (permuted) {
+      samples <- aperm(all_samples[, , pars, drop = FALSE], c(3, 1, 2))
+      return(lapply(1:length(pars), function(i) samples[i, , ]))
+    } else {
+      return(all_samples[, , pars, drop = FALSE])
+    }
+  }
+  
+  stanfit$as.array <- function() {
+    return(all_samples)
+  }
+  
+  stanfit$as.matrix <- function() {
+    return(matrix(aperm(all_samples, c(1, 3, 2)), ncol = ncol(all_samples)))
+  }
+  
+  stanfit$as.data.frame <- function() {
+    return(as.data.frame(stanfit$as.matrix()))
+  }
+  
+  stanfit$As.mcmc.list <- function() {
+    return(as.mcmc.list(lapply(1:n_chains, function(i) as.mcmc(all_samples[, i, ]))))
+  }
+  
+  stanfit$get_posterior_mean <- function(pars = NULL) {
+    if (is.null(pars)) pars <- param_names
+    samples <- stanfit$extract(pars, permuted = FALSE)
+    means <- apply(samples, c(2, 3), mean)
+    overall_means <- apply(samples, 3, mean)
+    return(cbind(means, overall_means))
+  }
+  
+  stanfit$get_logposterior <- function(inc_warmup = TRUE) {
+    # Assuming log_posterior is the last column in all_samples
+    log_post <- all_samples[, , ncol(all_samples)]
+    if (!inc_warmup) log_post <- log_post[(n_warmup+1):nrow(log_post), ]
+    return(split(log_post, rep(1:n_chains, each = nrow(log_post))))
+  }
+  
+  stanfit$get_sampler_params <- function(inc_warmup = TRUE) {
+    if (!inc_warmup) {
+      sampler_params <- lapply(sampler_params, function(x) x[(n_warmup+1):nrow(x), ])
+    }
+    return(sampler_params)
+  }
+  
+  stanfit$get_adaptation_info <- function() {
+    return(adaptation_info)
+  }
+  
+  stanfit$get_stancode <- function() {
+    return(stanmodel_arg@model_code)
+  }
+  
+  stanfit$get_stanmodel <- function() {
+    return(stanmodel_arg)
+  }
+  
+  stanfit$get_elapsed_time <- function() {
+    return(elapsed_time)
+  }
+  
+  stanfit$get_inits <- function() {
+    return(init_values)
+  }
+  
+  stanfit$get_seed <- function() {
+    return(seeds[1])
+  }
+  
+  stanfit$get_seeds <- function() {
+    return(seeds)
+  }
+  
+  return(stanfit)
+}
+
+# Helper functions
+
+effective_sample_size <- function(x) {
+  acf_x <- acf(as.vector(x), plot = FALSE)$acf[-1]
+  rho_k <- acf_x[seq_along(acf_x) %% 2 == 0]
+  n_eff <- length(x) / (1 + 2 * sum(rho_k))
+  return(n_eff)
+}
+
+gelman_rubin <- function(x) {
+  n <- nrow(x)
+  m <- ncol(x)
+  
+  B <- m * var(colMeans(x))
+  W <- mean(apply(x, 2, var))
+  
+  var_plus <- ((n - 1) / n) * W + (1 / n) * B
+  R_hat <- sqrt(var_plus / W)
+  
+  return(R_hat)
+}
+
 # Fit function
 fit_stan_model <- function(stanmodel_arg, data_list, n_warmup = 1000, n_iter = 10000, n_chains = 2, adapt_delta = 0.95, max_treedepth = 12, init_opt = "random", parallel = TRUE) {
   if (parallel){
