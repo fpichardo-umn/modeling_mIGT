@@ -1,6 +1,7 @@
 /Data/AHRB/*
 /Data/rds/*
 /models/rds/*
+/models/bin/*
 .DS_Store
 .Rproj.user/
 .Rproj.user

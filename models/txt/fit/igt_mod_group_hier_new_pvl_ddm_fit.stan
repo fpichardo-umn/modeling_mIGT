@@ -35,7 +35,7 @@ functions {
       }
       
       // Compute utility
-      real curUtil = pow(fabs(outcome[t]), alpha) * (outcome[t] > 0 ? 1 : lambda) * choice[t];
+      real curUtil = pow(abs(outcome[t]), alpha) * (outcome[t] > 0 ? 1 : lambda) * choice[t];
       
       // Decay-RL for all decks
       local_exploit *= decay_factor;
@@ -59,7 +59,7 @@ functions {
 data {
   int<lower=1> 			    N;	      // Number of subjects
   int<lower=1> 			    T; 	      // Max overall number of trials
-  int<lower=1>	 		    Tsubj[N]; // Number of trials for a subject
+  array[N] int<lower=1> 			    Tsubj; // Number of trials for a subject
   real<lower=0> 		    RTbound;  // Lower bound or RT across all (e.g., 0.1 second)
   array[N] real 		    minRT;    // Minimum RT for each sub
   array[N, T] real<lower=0> 	    RT;       // Reaction times

@@ -1,12 +1,12 @@
 
 data {
-  int<lower=1> 		   N;         // Number of subjects
-  int<lower=1> 		   T;         // Max overall trials
-  int<lower=1> 		   Nplay_max; // Max (across subjects) number of play trials
-  int<lower=1> 		   Npass_max; // Max (across subjects) number of pass trials
-  real<lower=0> 	   RTbound;   // Lower bound RT across all subjects (e.g., 0.1 second)
-  int<lower=0> 		   Nplay[N];  // Number of play trials for each sub
-  int<lower=0> 		   Npass[N];  // Number of pass trials for each sub
+  int<lower=1> 		  N;         // Number of subjects
+  int<lower=1> 		 T;         // Max overall trials
+  int<lower=1> 		 Nplay_max; // Max (across subjects) number of play trials
+  int<lower=1> 		 Npass_max; // Max (across subjects) number of pass trials
+  real<lower=0> 	 RTbound;   // Lower bound RT across all subjects (e.g., 0.1 second)
+  array[N] int<lower=0>  Nplay;  // Number of play trials for each sub
+  array[N] int<lower=0>  Npass;  // Number of pass trials for each sub
   array[N, T] real RTplay;      // Reaction times for play trials
   array[N, T] real RTpass;      // Reaction times for sub trials
   vector[N] 		   minRT;       // Minimum RT for each sub

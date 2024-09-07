@@ -37,7 +37,7 @@ functions {
 data {
   int<lower=1> 			    N; 	      // Number of subjects
   int<lower=1> 			    T;        // Number of trials
-  int<lower=1> 			    Tsubj[N]; // Number of trials for a subject
+  array[N] int<lower=1> 			    Tsubj; // Number of trials for a subject
   array[N, T] int<lower=0, upper=1> choice;   // Binary choices made at each trial
   array[N, T] int<lower=0, upper=4> shown;    // Deck shown at each trial
   array[N, T] real 		    outcome;  // Outcome at each trial
