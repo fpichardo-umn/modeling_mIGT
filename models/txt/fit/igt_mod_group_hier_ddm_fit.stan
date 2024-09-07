@@ -15,6 +15,7 @@ data {
 transformed data{
   vector[N] minRTdiff    = minRT - RTbound;
   real      RTmax        = max(minRT);
+  real buffer = 0.001;  // 1 ms buffer
 } 
 
 parameters {
@@ -30,13 +31,13 @@ parameters {
 }
 
 transformed parameters {
-  vector<lower=0>[N] 			boundary;
-  vector<lower=RTbound, upper=RTmax>[N] tau;
+  vector<lower=1e-6>[N] 			boundary;
+  vector<lower=RTbound - 1e-5, upper=RTmax>[N] tau;
   vector<lower=0, upper=1>[N] 		beta;
   vector[N] 				drift;
 
-  boundary = exp(mu_pr[1] + sigma[1] * boundary_pr);
-  tau      = inv_logit(mu_pr[2] + sigma[2] * tau_pr) .* minRTdiff + RTbound;
+  boundary = exp(inv_logit(mu_pr[1] + sigma[1]*boundary_pr) * 10 - 5);
+  tau      = inv_logit(mu_pr[2] + sigma[2] * tau_pr) .* (minRTdiff - buffer) + RTbound;
   beta     = inv_logit(mu_pr[3] + sigma[3] * beta_pr);
   drift    = mu_pr[4] + sigma[4] * drift_pr;
 }
@@ -63,7 +64,7 @@ generated quantities {
   // Init
   real<lower=RTbound, upper=RTmax> mu_tau;
   real<lower=0, upper=1>           mu_beta;
-  real<lower=0> 		   mu_boundary;
+  real<lower=1e-6> 		   mu_boundary;
   real 				   mu_drift = mu_pr[4];
 
   {
@@ -73,8 +74,7 @@ generated quantities {
     real RTlowerbound = (mean(minRT) - RTbound) + RTbound;
 
     // Compute interpretable group-level parameters
-    mu_boundary = exp(mu_pr[1]);
-
+    mu_boundary = exp(mu_transformed[1] * 10 - 5);
     mu_tau  = mu_transformed[2] * RTlowerbound;
     mu_beta = mu_transformed[3];
   }

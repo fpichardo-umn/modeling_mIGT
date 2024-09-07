@@ -1,0 +1,548 @@
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Initialization between (-2, 2) failed after 100 attempts. 
+Chain 3  Try specifying initial values, reducing ranges of constrained values, or reparameterizing the model.
+Chain 3 Initialization failed.
+Warning: Chain 3 finished unexpectedly!
+

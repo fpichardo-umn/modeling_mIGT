@@ -12,6 +12,7 @@ print_usage() {
   echo "  -f    Fit parameters config name (default: default)"
   echo "  -d    Data parameters config name (default: default)"
   echo "  -t    Type of stan code to run (fit, postpc, prepc) (default: fit)"
+  echo "  -c    Number of iterations for checkpoint runs (default: 1000)"
   echo "  -k    Task name (e.g., igt_mod)"
   echo "  -g    Group type (sing, group, group_hier)"
   echo "  -e    Your email address (required)"
@@ -21,7 +22,7 @@ print_usage() {
 
 # Parse command line arguments
 DRY_RUN=false
-while getopts ":m:f:d:e:t:k:g:n" opt; do
+while getopts ":m:f:d:e:t:k:c:g:n" opt; do
   case $opt in
     m) MODEL_NAMES=$OPTARG ;;
     f) FIT_CONFIG=$OPTARG ;;
@@ -30,6 +31,7 @@ while getopts ":m:f:d:e:t:k:g:n" opt; do
     k) TASK=$OPTARG ;;
     g) GROUP_TYPE=$OPTARG ;;
     e) USER_EMAIL=$OPTARG ;;
+    c) CHECK_ITER=$OPTARG ;;
     n) DRY_RUN=true ;;
     \?) echo "Invalid option -$OPTARG" >&2; print_usage ;;
   esac
@@ -45,6 +47,7 @@ fi
 FIT_CONFIG=${FIT_CONFIG:-default}
 DATA_CONFIG=${DATA_CONFIG:-default}
 MODEL_TYPE=${MODEL_TYPE:-fit}
+CHECK_ITER=${CHECK_ITER:-1000}
 
 # Directory checks
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -105,13 +108,14 @@ IFS=',' read -ra MODEL_ARRAY <<< "$MODEL_NAMES"
 generate_r_call() {
   local model=$1
   local dry_run_flag=$2
-  echo "Rscript $R_SCRIPT -m $model -t $MODEL_TYPE -k $TASK -g $GROUP_TYPE --n_subs \${n_subs} --n_trials \${n_trials} --RTbound_ms \${RTbound_ms} --rt_method \${rt_method} --n_warmup \${n_warmup} --n_iter \${n_iter} --n_chains \${n_chains} --adapt_delta \${adapt_delta} --max_treedepth \${max_treedepth} $dry_run_flag"
+  echo "Rscript $R_SCRIPT -m $model -t $MODEL_TYPE -k $TASK -g $GROUP_TYPE --n_subs \${n_subs} --n_trials \${n_trials} --RTbound_ms \${RTbound_ms} --rt_method \${rt_method} --n_warmup \${n_warmup} --n_iter \${n_iter} --n_chains \${n_chains} --adapt_delta \${adapt_delta} --max_treedepth \${max_treedepth} --check_iter ${CHECK_ITER} $dry_run_flag"
 }
 
 # Check model files and submit jobs
 for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
-  MODEL_FILE="${MODEL_DIR}/${MODEL_TYPE}/${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}.rds"
+  MODEL_FILE="${MODEL_DIR}/${MODEL_TYPE}/${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}.stan"
   echo "[OK] Model file: $MODEL_FILE"
+  echo
 
   if $DRY_RUN; then
     echo "Dry run for model ${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}:"
@@ -123,6 +127,7 @@ for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
     echo "    MODEL_TYPE=$MODEL_TYPE"
     echo "    TASK=$TASK"
     echo "    GROUP_TYPE=$GROUP_TYPE"
+    echo "    CHECK_ITER=$CHECK_ITER"
     echo "  R script call would be:"
     generate_r_call $MODEL_NAME "--dry_run"
     
@@ -134,7 +139,7 @@ for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
     JOB_NAME="${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}"
     job_id=$(sbatch --parsable \
       --job-name=$JOB_NAME \
-      --export=ALL,JOB_NAME=$JOB_NAME,MODEL_NAME=$MODEL_NAME,FIT_CONFIG=$FIT_CONFIG,DATA_CONFIG=$DATA_CONFIG,USER_EMAIL=$USER_EMAIL,MODEL_TYPE=$MODEL_TYPE,TASK=$TASK,GROUP_TYPE=$GROUP_TYPE \
+      --export=ALL,JOB_NAME=$JOB_NAME,MODEL_NAME=$MODEL_NAME,FIT_CONFIG=$FIT_CONFIG,DATA_CONFIG=$DATA_CONFIG,USER_EMAIL=$USER_EMAIL,MODEL_TYPE=$MODEL_TYPE,TASK=$TASK,GROUP_TYPE=$GROUP_TYPE,CHECK_ITER=$CHECK_ITER \
       $SBATCH_SCRIPT)
     if [ $? -eq 0 ]; then
       echo "Submitted job for model $MODEL_NAME with ID: $job_id"

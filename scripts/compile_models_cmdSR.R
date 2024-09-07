@@ -36,7 +36,7 @@ MODELS_BIN_DIR <- file.path(MODELS_DIR, "bin")
 compile_stan_model <- function(stan_file, bin_dir, verbose = FALSE) {
   tryCatch({
     stan_filename <- basename(stan_file)
-    exe_file <- file.path(bin_dir, tools::file_path_sans_ext(stan_filename), ".stan")
+    exe_file <- file.path(bin_dir, paste0(tools::file_path_sans_ext(stan_filename), ".stan"))
     hash_file <- paste0(tools::file_path_sans_ext(exe_file), ".hash")
     
     # Calculate hash of the Stan file

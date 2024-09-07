@@ -25,8 +25,6 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   
   if (dry_run) {
     cat("Dry run for model:", model_str, "\n")
-    cat("Stan code:\n")
-    cat(stanmodel_arg$code(), "\n")
     cat("Data list:\n")
     print(str(data_list))
     cat("Parameters:\n")
@@ -236,7 +234,8 @@ option_list = list(
   make_option(c("--adapt_delta"), type="double", default=0.95, help="Adapt delta"),
   make_option(c("--max_treedepth"), type="integer", default=12, help="Max tree depth"),
   make_option(c("--seed"), type="integer", default=29518, help="Set seed. Default: 29518"),
-  make_option(c("--dry_run"), action="store_true", default=FALSE, help="Perform a dry run")
+  make_option(c("--dry_run"), action="store_true", default=FALSE, help="Perform a dry run"),
+  make_option(c("--check_iter"), type="integer", default=1000, help="Iteration interval for checkpoint runs. Default: 1000")
 )
 
 opt_parser <- OptionParser(option_list=option_list)
@@ -331,7 +330,7 @@ fit <- fit_and_save_model(task, group_type, model_name, opt$type, data_list,
                           n_subs = opt$n_subs, n_trials = opt$n_trials,
                           n_warmup = opt$n_warmup, n_iter = opt$n_iter, n_chains = opt$n_chains,
                           adapt_delta = opt$adapt_delta, max_treedepth = opt$max_treedepth,
-                          model_params = model_params, dry_run = opt$dry_run)
+                          model_params = model_params, dry_run = opt$dry_run, checkpoint_interval = opt$check_iter)
 
 if (!opt$dry_run) {
   cat("Model fitted and saved successfully.\n")

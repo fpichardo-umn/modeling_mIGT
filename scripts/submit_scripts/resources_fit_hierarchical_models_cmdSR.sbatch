@@ -45,4 +45,5 @@ Rscript ./scripts/fit_hierarchical_models_cmdSR.R \
   --n_iter ${n_iter} \
   --n_chains ${n_chains} \
   --adapt_delta ${adapt_delta} \
-  --max_treedepth ${max_treedepth}
+  --max_treedepth ${max_treedepth} \
+  --check_iter ${CHECK_ITER}
