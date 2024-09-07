@@ -135,7 +135,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   all_samples <- do.call(posterior::bind_draws, c(accumulated_samples, along = "iteration"))
   
   # Combine all accumulated diagnostics
-  all_diagnostics <- do.call(rbind, accumulated_diagnostics)
+  all_diagnostics <- do.call(posterior::bind_draws, c(accumulated_diagnostics, along = "iteration"))
   
   # Calculate diagnostic summaries
   num_divergent <- colSums(all_diagnostics[, , "divergent__"])
@@ -162,6 +162,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   # Create a fit object with all necessary information
   fit = list(
     draws = all_samples,
+    sampler_diagnostics = all_diagnostics,
     n_warmup = n_warmup,
     n_iter = n_iter,
     n_params = dim(all_samples)[3],
@@ -201,7 +202,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   }
   
   cat("Extracting parameters\n")
-  fit$params <- extract_params(fit$draws, n_subs, main_params_vec = model_params)
+  fit$params <- extract_params(fit$all_params, n_subs, main_params_vec = model_params)
   fit$params <- unname(fit$params)
   
   cat("Saving fitted model to:", output_file, "\n")
@@ -213,48 +214,6 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   }
   
   return(fit)
-}
-
-create_init_list = function(last_draws, chain_idx) {
-  
-  # Extract the last draw for this chain
-  last_draw_chain <- last_draws[1, chain_idx, ]
-  
-  # Get all the parameter names
-  param_names <- dimnames(last_draw_chain)[[3]]
-  
-  # Separate parameters with and without square brackets
-  grouped_params <- gsub("\\[.*\\]", "", param_names)  # Remove everything in square brackets
-  unique_grouped_params <- unique(grouped_params)      # Get unique base parameter names
-  
-  # Create the list dynamically
-  init_vals <- list()
-  
-  # Loop through each unique base parameter name
-  for (param in unique_grouped_params) {
-    # Find all elements corresponding to this parameter
-    matching_indices <- grep(paste0("^", param), param_names)
-    
-    if (length(matching_indices) > 1) {
-      # If there are multiple entries, it's an array/vector: group them
-      init_vals[[param]] <- last_draw_chain[matching_indices]
-    } else {
-      # If there's only one entry, it's a scalar
-      init_vals[[param]] <- last_draw_chain[matching_indices]
-    }
-  }
-  
-  return(init_vals)
-}
-
-# Function to calculate diagnostics for a single parameter
-calculate_param_diagnostics <- function(param_draws) {
-  # Calculate diagnostics
-  rhat <- posterior::rhat(param_draws)
-  ess_bulk <- posterior::ess_bulk(param_draws)
-  ess_tail <- posterior::ess_tail(param_draws)
-  
-  return(c(rhat = rhat, ess_bulk = ess_bulk, ess_tail = ess_tail))
 }
 
 # Parse command line arguments
@@ -292,7 +251,7 @@ SCRIPT_DIR <- file.path(PROJ_DIR, "scripts")
 MODELS_BIN_DIR <- file.path(MODELS_DIR, "bin")
 
 # Load helper functions
-helper_functions_path <- file.path(SCRIPT_DIR, "helper_functions.R")
+helper_functions_path <- file.path(SCRIPT_DIR, "helper_functions_cmdSR.R")
 if (!file.exists(helper_functions_path)) {
   stop("helper_functions.R not found. Expected path: ", helper_functions_path)
 }

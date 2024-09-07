@@ -1,53 +1,64 @@
 # Load required libraries
 suppressPackageStartupMessages({
-  library(abind)
-  library(coda)
-  library(cmdstanr)
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(bayesplot)
+  library(posterior)
+  library(gridExtra)
 })
 
 ## Functions
-# Fit function
-fit_stan_model <- function(stanmodel_arg, data_list, n_warmup = 1000, n_iter = 10000, n_chains = 2, adapt_delta = 0.95, max_treedepth = 12, init_opt = "random", parallel = TRUE) {
-  if (parallel){
-    options(mc.cores = parallel::detectCores())
+# Fit functions
+create_init_list = function(last_draws, chain_idx) {
+  
+  # Extract the last draw for this chain
+  last_draw_chain <- last_draws[1, chain_idx, ]
+  
+  # Get all the parameter names
+  param_names <- dimnames(last_draw_chain)[[3]]
+  
+  # Separate parameters with and without square brackets
+  grouped_params <- gsub("\\[.*\\]", "", param_names)  # Remove everything in square brackets
+  unique_grouped_params <- unique(grouped_params)      # Get unique base parameter names
+  
+  # Create the list dynamically
+  init_vals <- list()
+  
+  # Loop through each unique base parameter name
+  for (param in unique_grouped_params) {
+    # Find all elements corresponding to this parameter
+    matching_indices <- grep(paste0("^", param), param_names)
+    
+    if (length(matching_indices) > 1) {
+      # If there are multiple entries, it's an array/vector: group them
+      init_vals[[param]] <- last_draw_chain[matching_indices]
+    } else {
+      # If there's only one entry, it's a scalar
+      init_vals[[param]] <- last_draw_chain[matching_indices]
+    }
   }
   
-  fit <- rstan::sampling(
-    object = stanmodel_arg,
-    data = data_list,
-    init = init_opt,
-    init_r = 0.1,
-    chains = n_chains,
-    iter = n_iter,
-    warmup = n_warmup,
-    thin = 1,
-    control = list(
-      adapt_delta = adapt_delta,
-      stepsize = 1,
-      max_treedepth = max_treedepth
-    )
-  )
-  
-  return(list(
-    fit = fit,
-    n_warmup = n_warmup,
-    n_iter = n_iter,
-    n_chains = n_chains,
-    adapt_delta = adapt_delta,
-    max_treedepth = max_treedepth,
-    tss = (n_iter - n_warmup) * n_chains,
-    all_params = names(fit),
-    list_params = unique(gsub("\\[.*?\\]", "", names(fit))),
-    samples = rstan::extract(fit)
-  ))
+  return(init_vals)
 }
+
+# Function to calculate diagnostics for a single parameter
+calculate_param_diagnostics <- function(param_draws) {
+  # Calculate diagnostics
+  rhat <- posterior::rhat(param_draws)
+  ess_bulk <- posterior::ess_bulk(param_draws)
+  ess_tail <- posterior::ess_tail(param_draws)
+  
+  return(c(rhat = rhat, ess_bulk = ess_bulk, ess_tail = ess_tail))
+}
+
 
 # Divergence check
 check_divergences <- function(fit) {
-  sampler_params <- rstan::get_sampler_params(fit, inc_warmup = FALSE)
-  divergences <- sum(sapply(sampler_params, function(x) sum(x[, "divergent__"])))
-  n_iter <- dim(sampler_params[[1]])[1]
-  n_chains <- length(sampler_params)
+  sampler_diagnostics <- fit$sampler_diagnostics
+  divergences <- sum(sapply(sampler_diagnostics, function(x) sum(x[, "divergent__"])))
+  n_iter <- dim(sampler_diagnostics[[1]])[1]
+  n_chains <- length(sampler_diagnostics)
   div_rate <- divergences / (n_iter * n_chains)
   
   cat("Number of divergent transitions:", divergences, "\n")
@@ -62,16 +73,14 @@ check_divergences <- function(fit) {
   }
   
   # NUTS Energy Diagnostic
-  if ("energy__" %in% colnames(sampler_params[[1]])) {
-    energy <- do.call(rbind, lapply(sampler_params, function(x) x[, "energy__"]))
-    energy_df <- data.frame(energy = as.vector(energy))
-    p <- ggplot(energy_df, aes(x = energy)) +
-      geom_histogram(bins = 30) +
-      ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
-      xlab("Energy") +
-      theme_minimal()
-    print(p)
-  }
+  energy <- do.call(rbind, lapply(sampler_diagnostics, function(x) x[, "energy__"]))
+  energy_df <- data.frame(energy = as.vector(energy))
+  p <- ggplot(energy_df, aes(x = energy)) +
+    geom_histogram(bins = 30) +
+    ggtitle("NUTS Energy Distribution (roughly bell-shaped?)") +
+    xlab("Energy") +
+    theme_minimal()
+  print(p)
 }
 
 # Display density plots by chain
@@ -81,12 +90,12 @@ display_density_plots_by_chain <- function(fit, params, plots_per_page = 10) {
   for (param in params) {
     tryCatch({
       # Extract the parameter values
-      param_values <- rstan::extract(fit, pars = param)[[1]]
+      param_values <- fit$draws[,, param]
       
       # Check if all values are finite
       if (all(is.finite(param_values))) {
-        plot <- mcmc_dens_chains(fit, pars = param)
-        plot_list[[param]] <- plot
+        plot <- mcmc_dens_chains(param_values)
+        plot_list[[param]] <- plot + ggtitle(param)
       } else {
         # Create a text plot for non-finite parameters
         plot <- ggplot() + 
@@ -129,12 +138,12 @@ display_overall_density_plots <- function(fit, params, plots_per_page = 10) {
   for (param in params) {
     tryCatch({
       # Extract the parameter values
-      param_values <- rstan::extract(fit, pars = param)[[1]]
+      param_values <- fit$draws[,, param]
       
       # Check if all values are finite
       if (all(is.finite(param_values))) {
-        plot <- mcmc_dens(fit, pars = param)
-        plot_list[[param]] <- plot
+        plot <- mcmc_dens(param_values)
+        plot_list[[param]] <- plot + ggtitle(param)
       } else {
         # Create a text plot for non-finite parameters
         plot <- ggplot() + 
@@ -164,13 +173,13 @@ display_overall_density_plots <- function(fit, params, plots_per_page = 10) {
     start_idx <- (page - 1) * plots_per_page + 1
     end_idx <- min(page * plots_per_page, num_plots)
     plots_to_display <- plot_list[start_idx:end_idx]
-    do.call(grid.arrange, c(plots_to_display, ncol = 2, top =paste("Overall Density Plots (Page", page, "of", num_pages, ")")))
+    do.call(grid.arrange, c(plots_to_display, ncol = 2, top = paste("Overall Density Plots (Page", page, "of", num_pages, ")")))
   }
 }
 
 # R-hat analysis
 analyze_rhat <- function(fit, params, lower_than_q = 0.1, higher_than_q = 0.9) {
-  rhat_values <- bayesplot::rhat(fit, pars = params)
+  rhat_values <- fit$diagnostics$rhat[params]
   print(summary(rhat_values))
   
   rhat_values_valid <- rhat_values[!is.na(rhat_values)]
@@ -183,7 +192,8 @@ analyze_rhat <- function(fit, params, lower_than_q = 0.1, higher_than_q = 0.9) {
 
 # Effective Sample Size analysis
 analyze_ess <- function(fit, params, lower_than_q = 0.25) {
-  n_eff <- neff_ratio(fit, pars = params)
+  ess_bulk_values <- fit$diagnostics$ess_bulk[params]
+  n_eff <- ess_bulk_values / prod(dim(fit$draws)[1:2])  # Divide by total number of draws
   print(summary(n_eff))
   
   hist(n_eff, main = "Effective Sample Size Ratio (higher is better)", xlab = "Neff/N")
@@ -192,8 +202,8 @@ analyze_ess <- function(fit, params, lower_than_q = 0.25) {
 
 # Monte Carlo Standard Error analysis
 analyze_mcse <- function(fit, params) {
-  mcse_values <- apply(as_draws_matrix(fit), 2, mcse_mean)
-  posterior_sd <- apply(as_draws_matrix(fit), 2, sd)
+  mcse_values <- fit$diagnostics$mcse_mean[params]
+  posterior_sd <- apply(fit$draws[,, params], 3, sd)
   mcse_ratio <- mcse_values / posterior_sd
   
   print(summary(mcse_ratio))
@@ -422,6 +432,29 @@ sample_params <- function(params, sampled_indices) {
   return(sampled_params)
 }
 
+sort_params <- function(params, hier_params_vec, main_params_vec, output_params_vec) {
+  param_order <- function(param) {
+    base_param <- get_base_name(param)
+    
+    hier_index <- which(sapply(hier_params_vec, function(h) grepl(paste0("^", h), base_param)))
+    if (length(hier_index) > 0) return(hier_index[1])
+    
+    main_index <- which(main_params_vec == base_param)
+    if (length(main_index) > 0) {
+      return(length(hier_params_vec) + 2 * main_index[1] - (if(grepl("_pr$", param)) 1 else 0))
+    }
+    
+    output_index <- which(output_params_vec == base_param)
+    if (length(output_index) > 0) {
+      return(length(hier_params_vec) + 2 * length(main_params_vec) + output_index[1])
+    }
+    
+    return(1000)  # If not found in any category, put at the end
+  }
+  
+  params[order(sapply(params, param_order))]
+}
+
 # Main function
 extract_params <- function(param_names, n_subs = 1, num_to_view = 10, drop_lp = TRUE, 
                            hier_params_vec = c("mu", "sigma", "mu_"),
@@ -440,7 +473,11 @@ extract_params <- function(param_names, n_subs = 1, num_to_view = 10, drop_lp = 
     sampled_indices_other <- 1
     sampled_indices_subs <- 1
     sampled_indices_trials <- 1:num_to_view  # Keep trial sampling for output params
-  } else {
+  } else if (n_subs < num_to_view) {
+    sampled_indices_other <- sort(sample(1:num_to_view, num_to_view))
+    sampled_indices_subs <- 1:n_subs
+    sampled_indices_trials <- sort(sample(1:num_to_view, num_to_view))
+  }else {
     sampled_indices_other <- sort(sample(1:num_to_view, num_to_view))
     sampled_indices_subs <- sort(sample(1:n_subs, num_to_view))
     sampled_indices_trials <- sort(sample(1:num_to_view, num_to_view))
@@ -448,36 +485,13 @@ extract_params <- function(param_names, n_subs = 1, num_to_view = 10, drop_lp = 
   
   # Sample and combine parameters
   sampled_params <- c(
-    sample_params(categorized_params$hier, sampled_indices_other),
+    sample_params(categorized_params$hier, 1:length(main_params_vec)),
     sample_params(categorized_params$main, sampled_indices_subs),
     sample_params(categorized_params$output, sampled_indices_trials),
     sample_params(categorized_params$other, sampled_indices_other)
   )
   
   # Sort parameters
-  sort_params <- function(params, hier_params_vec, main_params_vec, output_params_vec) {
-    param_order <- function(param) {
-      base_param <- get_base_name(param)
-      
-      hier_index <- which(sapply(hier_params_vec, function(h) grepl(paste0("^", h), base_param)))
-      if (length(hier_index) > 0) return(hier_index[1])
-      
-      main_index <- which(main_params_vec == base_param)
-      if (length(main_index) > 0) {
-        return(length(hier_params_vec) + 2 * main_index[1] - (if(grepl("_pr$", param)) 1 else 0))
-      }
-      
-      output_index <- which(output_params_vec == base_param)
-      if (length(output_index) > 0) {
-        return(length(hier_params_vec) + 2 * length(main_params_vec) + output_index[1])
-      }
-      
-      return(1000)  # If not found in any category, put at the end
-    }
-    
-    params[order(sapply(params, param_order))]
-  }
-  
   sorted_params <- sort_params(sampled_params, hier_params_vec, main_params_vec, output_params_vec)
   
   # Remove duplicates while preserving order
@@ -487,7 +501,7 @@ extract_params <- function(param_names, n_subs = 1, num_to_view = 10, drop_lp = 
 }
 
 # Diagnostics
-run_selected_diagnostics <- function(model_fit_obj, steps_to_run = NULL, params = NULL, plots_pp = 10, lower_than_q = 0.1, higher_than_q = 0.9) {
+run_selected_diagnostics <- function(fit, steps_to_run = NULL, params = NULL, plots_pp = 10, lower_than_q = 0.1, higher_than_q = 0.9) {
   available_steps <- c(
     "divergences", "traceplots", "density_plots_by_chain", "overall_density_plots",
     "rhat", "ess", "mcse", "autocorrelation", "parallel_coordinates", "pairs_plot"
@@ -506,40 +520,37 @@ run_selected_diagnostics <- function(model_fit_obj, steps_to_run = NULL, params 
     cat("\n\n### Running:", step, "\n")
     switch(step,
            divergences = {
-             check_divergences(model_fit_obj$fit)
+             check_divergences(fit)
            },
            traceplots = {
-             print(mcmc_trace(model_fit_obj$fit, params, iter1 = model_fit_obj$n_warmup + 1) +
+             print(mcmc_trace(fit$draws[,, params]) +
                      ggtitle("Trace Plots (should resemble white noise)"))
-             # Should be white noise (hairy caterpillars with out any obvious trends or patterns)
            },
            density_plots_by_chain = {
-             display_density_plots_by_chain(model_fit_obj$fit, params, plots_per_page = plots_pp)
+             display_density_plots_by_chain(fit, params, plots_per_page = plots_pp)
            },
            overall_density_plots = {
-             display_overall_density_plots(model_fit_obj$fit, params, plots_per_page = plots_pp)
+             display_overall_density_plots(fit, params, plots_per_page = plots_pp)
            },
            rhat = {
-             analyze_rhat(model_fit_obj$fit, params, lower_than_q = lower_than_q, higher_than_q = higher_than_q)
+             analyze_rhat(fit, params, lower_than_q = lower_than_q, higher_than_q = higher_than_q)
            },
            ess = {
-             analyze_ess(model_fit_obj$fit, params, lower_than_q = lower_than_q)
+             analyze_ess(fit, params, lower_than_q = lower_than_q)
            },
            mcse = {
-             analyze_mcse(model_fit_obj$fit, params)
+             analyze_mcse(fit, params)
            },
            autocorrelation = {
-             print(mcmc_acf(model_fit_obj$fit, pars = params) +
-                     ggtitle("Autocorrelation (Should decay quickly)")) # High AC at high lags suggests poor mixing
+             print(mcmc_acf(fit$draws[,, params]) +
+                     ggtitle("Autocorrelation (Should decay quickly)"))
            },
            parallel_coordinates = {
-             print(mcmc_parcoord(model_fit_obj$fit, pars =params) +
+             print(mcmc_parcoord(fit$draws[,, params]) +
                      ggtitle("Parallel Coordinates Plot"))
-             # Should be a mix of criss-crossing lines without any strong patterns
-             # If lines are very tangled or show clear patterns, might indicate high correlation between params
            },
            pairs_plot = {
-             pairs(model_fit_obj$fit, pars = params) # Should not have red dots (divergences)
+             bayesplot::mcmc_pairs(fit$draws[,, params])
            }
     )
   }
