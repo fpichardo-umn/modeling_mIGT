@@ -2,7 +2,7 @@
 suppressPackageStartupMessages({
   library(abind)
   library(coda)
-  library(rstan)
+  library(cmdstanr)
 })
 
 ## Functions
