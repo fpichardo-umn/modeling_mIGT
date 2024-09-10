@@ -48,7 +48,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
     accumulated_samples <- checkpoint$accumulated_samples
     accumulated_diagnostics <- checkpoint$accumulated_diagnostics
     step_size <- checkpoint$step_size
-    inv_metric <- checkpoint$inv_metrics
+    inv_metric <- checkpoint$inv_metric
     warmup_done <- checkpoint$warmup_done
   } else {
     current_iter <- 0

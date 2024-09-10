@@ -56,9 +56,9 @@ calculate_param_diagnostics <- function(param_draws) {
 # Divergence check
 check_divergences <- function(fit) {
   sampler_diagnostics <- fit$sampler_diagnostics
-  divergences <- sum(sapply(sampler_diagnostics, function(x) sum(x[, "divergent__"])))
-  n_iter <- dim(sampler_diagnostics[[1]])[1]
-  n_chains <- length(sampler_diagnostics)
+  divergences <- sum(sampler_diagnostics[,,"divergent__"])
+  n_iter <- dim(sampler_diagnostics)[1]
+  n_chains <- dim(sampler_diagnostics)[2]
   div_rate <- divergences / (n_iter * n_chains)
   
   cat("Number of divergent transitions:", divergences, "\n")
@@ -73,7 +73,7 @@ check_divergences <- function(fit) {
   }
   
   # NUTS Energy Diagnostic
-  energy <- do.call(rbind, lapply(sampler_diagnostics, function(x) x[, "energy__"]))
+  energy <- sampler_diagnostics[,, "energy__"]
   energy_df <- data.frame(energy = as.vector(energy))
   p <- ggplot(energy_df, aes(x = energy)) +
     geom_histogram(bins = 30) +
@@ -179,7 +179,7 @@ display_overall_density_plots <- function(fit, params, plots_per_page = 10) {
 
 # R-hat analysis
 analyze_rhat <- function(fit, params, lower_than_q = 0.1, higher_than_q = 0.9) {
-  rhat_values <- fit$diagnostics$rhat[params]
+  rhat_values <- fit$diagnostics[params,'rhat']
   print(summary(rhat_values))
   
   rhat_values_valid <- rhat_values[!is.na(rhat_values)]
@@ -192,7 +192,7 @@ analyze_rhat <- function(fit, params, lower_than_q = 0.1, higher_than_q = 0.9) {
 
 # Effective Sample Size analysis
 analyze_ess <- function(fit, params, lower_than_q = 0.25) {
-  ess_bulk_values <- fit$diagnostics$ess_bulk[params]
+  ess_bulk_values <- fit$diagnostics[params,'ess_bulk']
   n_eff <- ess_bulk_values / prod(dim(fit$draws)[1:2])  # Divide by total number of draws
   print(summary(n_eff))
   
@@ -202,8 +202,11 @@ analyze_ess <- function(fit, params, lower_than_q = 0.25) {
 
 # Monte Carlo Standard Error analysis
 analyze_mcse <- function(fit, params) {
-  mcse_values <- fit$diagnostics$mcse_mean[params]
-  posterior_sd <- apply(fit$draws[,, params], 3, sd)
+  # Extract draws for the specified parameters
+  draws_matrix <- posterior::as_draws_matrix(fit$draws[,, params])
+  
+  mcse_values <- apply(draws_matrix, 2, posterior::mcse_mean)
+  posterior_sd <- apply(draws_matrix, 2, sd)
   mcse_ratio <- mcse_values / posterior_sd
   
   print(summary(mcse_ratio))
@@ -504,7 +507,7 @@ extract_params <- function(param_names, n_subs = 1, num_to_view = 10, drop_lp = 
 run_selected_diagnostics <- function(fit, steps_to_run = NULL, params = NULL, plots_pp = 10, lower_than_q = 0.1, higher_than_q = 0.9) {
   available_steps <- c(
     "divergences", "traceplots", "density_plots_by_chain", "overall_density_plots",
-    "rhat", "ess", "mcse", "autocorrelation", "parallel_coordinates", "pairs_plot"
+    "rhat", "rhat_all", "ess", "ess_all", "mcse", "mcse_all", "autocorrelation", "parallel_coordinates", "pairs_plot"
   )
   
   if (is.null(steps_to_run)) {
@@ -516,6 +519,7 @@ run_selected_diagnostics <- function(fit, steps_to_run = NULL, params = NULL, pl
     }
   }
   
+  params = fit$params
   for (step in steps_to_run) {
     cat("\n\n### Running:", step, "\n")
     switch(step,
@@ -523,7 +527,7 @@ run_selected_diagnostics <- function(fit, steps_to_run = NULL, params = NULL, pl
              check_divergences(fit)
            },
            traceplots = {
-             print(mcmc_trace(fit$draws[,, params]) +
+             print(mcmc_trace(fit$draws[,, sample(params, 10)]) +
                      ggtitle("Trace Plots (should resemble white noise)"))
            },
            density_plots_by_chain = {
@@ -535,11 +539,20 @@ run_selected_diagnostics <- function(fit, steps_to_run = NULL, params = NULL, pl
            rhat = {
              analyze_rhat(fit, params, lower_than_q = lower_than_q, higher_than_q = higher_than_q)
            },
+           rhat_all = {
+             analyze_rhat(fit, variables(fit$draws), lower_than_q = lower_than_q, higher_than_q = higher_than_q)
+           },
            ess = {
              analyze_ess(fit, params, lower_than_q = lower_than_q)
            },
+           ess_all = {
+             analyze_ess(fit, variables(fit$draws), lower_than_q = lower_than_q)
+           },
            mcse = {
              analyze_mcse(fit, params)
+           },
+           mcse_all = {
+             analyze_mcse(fit, variables(fit$draws))
            },
            autocorrelation = {
              print(mcmc_acf(fit$draws[,, params]) +

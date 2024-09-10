@@ -546,3 +546,14 @@ Chain 3  Try specifying initial values, reducing ranges of constrained values, o
 Chain 3 Initialization failed.
 Warning: Chain 3 finished unexpectedly!
 
+Warning: 1 chain(s) finished unexpectedly!
+Warning: The returned fit object will only read in results of successful chains. Please use read_cmdstan_csv() to read the results of the failed chains separately.Use the $output(chain_id) method for more output of the failed chains.
+Warning: 1 of 3 (33.0%) transitions ended with a divergence.
+See https://mc-stan.org/misc/warnings for details.
+
+Error in `[.default`(last_draws, 1, chain_idx, , drop = FALSE) : 
+  subscript out of bounds
+Calls: fit_and_save_model ... create_init_list -> [ -> [.draws_array -> NextMethod
+In addition: Warning message:
+E-BFMI not computed because it is undefined for posterior chains of length less than 3. 
+Execution halted
