@@ -36,9 +36,6 @@ functions {
     target += wiener_lpdf(RT[play_indices[:play_count]] | boundary, tau, beta, drift_rates[play_indices[:play_count]]);
     target += wiener_lpdf(RT[pass_indices[:pass_count]] | boundary, tau, 1-beta, -drift_rates[pass_indices[:pass_count]]);
     
-    // Compute log probability for choices
-    target += bernoulli_logit_lpmf(choice | drift_rates);
-    
     return local_ev;
   }
 }

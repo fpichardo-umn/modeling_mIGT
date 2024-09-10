@@ -31,8 +31,6 @@ functions {
         target += wiener_lpdf(RT[t] | boundary, tau, 1-beta, -curDrift);
       }
 
-      target += bernoulli_logit_lpmf(choice[t] | curDrift);
-
       // Compute utility
       curUtil = pow(abs(outcome[t]), alpha) * (outcome[t] > 0 ? 1 : lambda) * choice[t];
 
