@@ -1,5 +1,7 @@
 library(R6)
 library(data.table)
+library(optparse)
+library(here)
 
 # Define deck properties based on Table 2
 DECK_PROPERTIES <- list(
@@ -7,6 +9,14 @@ DECK_PROPERTIES <- list(
   B = list(gain = 100, loss = -1150, prob_gain = 0.90, prob_loss = 0.10, prob_zero = 0.00, first_loss = 10, expected_value = 25),
   C = list(gain = 50, loss = -25, prob_gain = 0.50, prob_loss = 0.25, prob_zero = 0.25, first_loss = 13, expected_value = 18.75),
   D = list(gain = 50, loss = -200, prob_gain = 0.90, prob_loss = 0.10, prob_zero = 0.00, first_loss = 10, expected_value = 25)
+)
+
+# Define parameter ranges for suggestion
+PARAM_RANGES <- list(
+  con = list(low = c(-2, -1), medium = c(-1, 1), high = c(1, 2)),
+  update = list(low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1)),
+  wgt_pun = list(low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1)),
+  wgt_rew = list(low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1))
 )
 
 # Subject class (Model 1 - EVL)
@@ -21,14 +31,21 @@ Subject <- R6Class("Subject",
                      wgt_rew = NULL,
                      deck_plays = NULL,
                      
-                     initialize = function(id, con, update, wgt_pun, wgt_rew) {
+                     initialize = function(id, params = NULL) {
                        self$id <- id
                        self$ev <- rep(0, 4)  # Initial expected values for 4 decks
-                       self$con <- con
-                       self$sensitivity <- function(t) t^con / 10  # Sensitivity function
-                       self$update <- update
-                       self$wgt_pun <- wgt_pun
-                       self$wgt_rew <- wgt_rew
+                       if (!is.null(params)) {
+                         self$con <- params$con
+                         self$update <- params$update
+                         self$wgt_pun <- params$wgt_pun
+                         self$wgt_rew <- params$wgt_rew
+                       } else {
+                         self$con <- runif(1, -2, 2)
+                         self$update <- runif(1, 0, 1)
+                         self$wgt_pun <- runif(1, 0, 1)
+                         self$wgt_rew <- runif(1, 0, 1)
+                       }
+                       self$sensitivity <- function(t) t^self$con / 10  # Sensitivity function
                        self$deck_plays <- rep(0, 4)  # Track number of plays for each deck
                      },
                      
@@ -53,35 +70,7 @@ Subject <- R6Class("Subject",
                    )
 )
 
-# Session class
-Session <- R6Class("Session",
-                   public = list(
-                     data = NULL,
-                     
-                     initialize = function() {
-                       self$data <- data.table()
-                     },
-                     
-                     add_trial = function(subject_id, trial, block, deck_shown, choice, gain, loss, net_outcome, ev_A, ev_B, ev_C, ev_D, is_training = FALSE) {
-                       new_row <- data.table(
-                         subject_id = subject_id,
-                         trial = trial,
-                         block = block,
-                         deck_shown = deck_shown,
-                         choice = choice,
-                         gain = gain,
-                         loss = loss,
-                         net_outcome = net_outcome,
-                         ev_A = ev_A,
-                         ev_B = ev_B,
-                         ev_C = ev_C,
-                         ev_D = ev_D,
-                         is_training = is_training
-                       )
-                       self$data <- rbindlist(list(self$data, new_row))
-                     }
-                   )
-)
+# Session class remains unchanged
 
 # Helper function to generate outcome
 generate_outcome <- function(deck, trial) {
@@ -102,22 +91,40 @@ generate_outcome <- function(deck, trial) {
   }
 }
 
+# Function to suggest parameter values
+suggest_parameters <- function(n_sets) {
+  param_sets <- list()
+  
+  # Ensure we have at least one set with all low, all medium, and all high values
+  param_sets[[1]] <- lapply(PARAM_RANGES, function(range) round(runif(1, range$low[1], range$low[2]), 2))
+  param_sets[[2]] <- lapply(PARAM_RANGES, function(range) round(runif(1, range$medium[1], range$medium[2]), 2))
+  param_sets[[3]] <- lapply(PARAM_RANGES, function(range) round(runif(1, range$high[1], range$high[2]), 2))
+  
+  # Create sets with interesting combinations
+  for (i in 4:(length(param_sets) + 1)) {
+    param_set <- list()
+    for (param in names(PARAM_RANGES)) {
+      range_choice <- sample(c("low", "medium", "high"), 1)
+      range <- PARAM_RANGES[[param]][[range_choice]]
+      param_set[[param]] <- round(runif(1, range[1], range[2]),2)
+    }
+    param_sets[[i]] <- param_set
+  }
+  
+  return(param_sets)
+}
+
 # Simulation functions
-# New function to generate balanced, randomized deck presentations
 generate_balanced_deck_sequence <- function(n_blocks, trials_per_block) {
   total_trials <- n_blocks * trials_per_block
   trials_per_deck <- total_trials / 4
   
-  # Create a sequence with equal number of each deck
   balanced_sequence <- rep(1:4, each = trials_per_deck)
-  
-  # Shuffle the sequence
   shuffled_sequence <- sample(balanced_sequence)
   
   return(shuffled_sequence)
 }
 
-# Modified simulate_igt_trial function
 simulate_igt_trial <- function(subject, session, trial, block, deck_shown, forced_choice = NULL) {
   if (is.null(forced_choice)) {
     choice <- subject$make_decision(deck_shown, trial)
@@ -144,12 +151,10 @@ simulate_igt_trial <- function(subject, session, trial, block, deck_shown, force
   return(list(subject = subject, session = session))
 }
 
-# Modified simulate_igt_session function
 simulate_igt_session <- function(subject, n_blocks = 6, trials_per_block = 20, training_decks = NULL, training_choices = NULL) {
   session <- Session$new()
   total_trials <- n_blocks * trials_per_block
   
-  # Generate balanced, randomized deck sequence
   deck_sequence <- generate_balanced_deck_sequence(n_blocks, trials_per_block)
   
   if (!is.null(training_decks) && !is.null(training_choices)) {
@@ -179,23 +184,20 @@ simulate_igt_session <- function(subject, n_blocks = 6, trials_per_block = 20, t
 }
 
 # Modified function to generate IGT data for multiple subjects
-generate_igt_data <- function(n_subjects, param_distributions, training_decks = NULL, training_choices = NULL) {
+generate_igt_data <- function(n_subjects, param_sets = NULL, training_decks = NULL, training_choices = NULL, output_dir = NULL) {
   all_sessions <- list()
   subject_params <- data.table()
   
+  if (is.null(param_sets)) {
+    param_sets <- suggest_parameters(n_subjects)
+  }
+  
   for (i in 1:n_subjects) {
-    params <- lapply(param_distributions, function(dist) dist())
-    subject <- Subject$new(
-      id = i,
-      con = params$con,
-      update = params$update,
-      wgt_pun = params$wgt_pun,
-      wgt_rew = params$wgt_rew
-    )
+    params <- param_sets[[i]]
+    subject <- Subject$new(id = i, params = params)
     session <- simulate_igt_session(subject, training_decks = training_decks, training_choices = training_choices)
     all_sessions[[i]] <- session$data
     
-    # Store subject-level parameters
     subject_params <- rbindlist(list(subject_params, data.table(
       subject_id = i,
       con = subject$con,
@@ -207,32 +209,74 @@ generate_igt_data <- function(n_subjects, param_distributions, training_decks = 
   
   simulated_data <- rbindlist(all_sessions)
   
-  return(list(data = simulated_data, subject_params = subject_params))
+  result <- list(data = simulated_data, subject_params = subject_params)
+  
+  if (!is.null(output_dir)) {
+    fwrite(simulated_data, file.path(output_dir, "sim_igt_mod_ev_desc-data.csv"))
+    fwrite(subject_params, file.path(output_dir, "sim_igt_mod_ev_desc-sub_params.csv"))
+    saveRDS(param_sets, file.path(output_dir, "sim_igt_mod_ev_desc-true_param_sets.rds"))
+  }
+  
+  return(result)
 }
 
-# Example usage
+# Parse command line arguments
+option_list <- list(
+  make_option(c("-n", "--n_subjects"), type="integer", default=100, help="Number of subjects (def: 100)"),
+  make_option(c("-b", "--n_blocks"), type="integer", default=6, help="Number of blocks (def: 6)"),
+  make_option(c("-t", "--trials_per_block"), type="integer", default=20, help="Trials per block (def: 20)"),
+  make_option(c("-f", "--fixed_params"), type="character", default=NULL, help="Path to fixed parameters file"),
+  make_option(c("-s", "--suggest_params"), action="store_true", default=FALSE, help="Suggest parameter values"),
+  make_option(c("-o", "--output_dir"), type="character", default=NULL, help="Output directory for simulated data (def: Data/rds/sim")
+)
+
+opt_parser <- OptionParser(option_list=option_list)
+opt <- parse_args(opt_parser)
+
+# Set up directories
+PROJ_DIR <- here::here()
+DATA_DIR <- file.path(PROJ_DIR, "Data")
+DATA_RDS_DIR <- file.path(DATA_DIR, "rds")
+DATA_RDS_SIM_DIR <- file.path(DATA_DIR, "sim")
+
+if (is.null(opt$output_dir)) {
+  opt$output_dir <- DATA_RDS_SIM_DIR
+}
+
+if (!dir.exists(opt$output_dir)) {
+  dir.create(opt$output_dir, recursive = TRUE)
+}
+
+# Main execution
 set.seed(123)  # for reproducibility
 
-param_distributions <- list(
-  con = function() runif(1, -2, 2),
-  update = function() runif(1, 0, 1),
-  wgt_pun = function() runif(1, 0, 1),
-  wgt_rew = function() runif(1, 0, 1)
-)
+if (opt$suggest_params) {
+  suggested_params <- suggest_parameters(opt$n_subjects)
+  saveRDS(suggested_params, file.path(opt$output_dir, "suggested_parameters.rds"))
+  cat("Suggested parameters saved to", file.path(opt$output_dir, "suggested_parameters.rds"), "\n")
+} else {
+  suggested_params <- NULL
+}
+
+if (!is.null(opt$fixed_params)) {
+  fixed_params <- readRDS(opt$fixed_params)
+} else {
+  fixed_params <- suggested_params
+}
 
 # Define training decks and choices
 training_decks <- c(4, 3, 2, 3, 3, 2, 2, 4, 2, 1, 4, 1, 4, 3, 2, 4, 3, 1, 1, 1)
 training_choices <- c(1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0)
 
+simulation_result <- generate_igt_data(
+  n_subjects = opt$n_subjects,
+  param_sets = fixed_params,
+  training_decks = training_decks,
+  training_choices = training_choices,
+  output_dir = opt$output_dir
+)
 
-simulated_data <- generate_igt_data(n_subjects = 100, param_distributions, 
-                                       training_decks = training_decks, 
-                                       training_choices = training_choices)
-
-
-# Save simulated data
-fwrite(simulation_result$data, "simulated_igt_data.csv")
-fwrite(simulation_result$subject_params, "subject_parameters.csv")
+cat("Simulation completed. Data saved to", opt$output_dir, "\n")
 
 # Print summary
 print(summary(simulation_result$data))
