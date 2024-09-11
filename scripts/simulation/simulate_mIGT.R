@@ -70,7 +70,35 @@ Subject <- R6Class("Subject",
                    )
 )
 
-# Session class remains unchanged
+# Session class
+Session <- R6Class("Session",
+                   public = list(
+                     data = NULL,
+                     
+                     initialize = function() {
+                       self$data <- data.table()
+                     },
+                     
+                     add_trial = function(subject_id, trial, block, deck_shown, choice, gain, loss, net_outcome, ev_A, ev_B, ev_C, ev_D, is_training = FALSE) {
+                       new_row <- data.table(
+                         subject_id = subject_id,
+                         trial = trial,
+                         block = block,
+                         deck_shown = deck_shown,
+                         choice = choice,
+                         gain = gain,
+                         loss = loss,
+                         net_outcome = net_outcome,
+                         ev_A = ev_A,
+                         ev_B = ev_B,
+                         ev_C = ev_C,
+                         ev_D = ev_D,
+                         is_training = is_training
+                       )
+                       self$data <- rbindlist(list(self$data, new_row))
+                     }
+                   )
+)
 
 # Helper function to generate outcome
 generate_outcome <- function(deck, trial) {
@@ -93,7 +121,7 @@ generate_outcome <- function(deck, trial) {
 
 # Function to suggest parameter values
 suggest_parameters <- function(n_sets) {
-  param_sets <- list()
+  param_sets <- vector("list", n_sets + 3)
   
   # Ensure we have at least one set with all low, all medium, and all high values
   param_sets[[1]] <- lapply(PARAM_RANGES, function(range) round(runif(1, range$low[1], range$low[2]), 2))
@@ -237,7 +265,7 @@ opt <- parse_args(opt_parser)
 PROJ_DIR <- here::here()
 DATA_DIR <- file.path(PROJ_DIR, "Data")
 DATA_RDS_DIR <- file.path(DATA_DIR, "rds")
-DATA_RDS_SIM_DIR <- file.path(DATA_DIR, "sim")
+DATA_RDS_SIM_DIR <- file.path(DATA_RDS_DIR, "sim")
 
 if (is.null(opt$output_dir)) {
   opt$output_dir <- DATA_RDS_SIM_DIR
