@@ -1,7 +1,9 @@
-library(R6)
-library(data.table)
-library(optparse)
-library(here)
+suppressPackageStartupMessages({
+  library(R6)
+  library(data.table)
+  library(optparse)
+  library(here)
+})
 
 # Define deck properties based on Table 2
 DECK_PROPERTIES <- list(
