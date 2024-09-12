@@ -44,14 +44,14 @@ transformed parameters {
 
 model {
   // Hyperparameters
-  mu_pr ~ normal(0, 10);
-  sigma ~ cauchy(0, 5);
+  mu_pr ~ normal(0, 5);
+  sigma ~ cauchy(0, 2.5);
 
   // Priors
-  to_vector(boundary_pr) ~ normal(0, 10);
-  to_vector(tau_pr)      ~ normal(0, 5);
-  to_vector(beta_pr)     ~ normal(0, 5);
-  to_vector(drift)       ~ normal(0, 10);
+  to_vector(boundary_pr) ~ normal(0, 5);
+  to_vector(tau_pr)      ~ normal(0, 2.5);
+  to_vector(beta_pr)     ~ normal(0, 2.5);
+  to_vector(drift)       ~ normal(0, 5);
   
   // For each sub
   for (n in 1:N) { 

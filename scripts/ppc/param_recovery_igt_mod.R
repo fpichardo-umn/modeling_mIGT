@@ -75,10 +75,14 @@ fit <- model$sample(
   chains = 2,
   parallel_chains = 2,
   iter_warmup = 500,
-  iter_sampling = 1000,
+  iter_sampling = 5000,
   adapt_delta = 0.95,
   max_treedepth = 12
 )
+
+# Save results
+saveRDS(fit, file = file.path(DATA_RDS_SIM_DIR, "parameter_recovery_fit.rds"))
+
 
 # Extract posterior samples
 posterior_samples <- as_draws_df(fit$draws())
@@ -249,9 +253,9 @@ individual_within_metrics <- calculate_within_individual_metrics(individual_reco
 
 # Print recovery metrics
 cat("Group-level recovery metrics:\n")
-print(group_metrics)
+print(group_overall_metrics)
 cat("\nIndividual-level recovery metrics:\n")
-print(individual_metrics)
+print(individual_overall_metrics)
 
 # Save results
 saveRDS(list(

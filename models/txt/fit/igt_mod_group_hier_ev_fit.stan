@@ -70,14 +70,14 @@ transformed parameters {
 
 model {
   // Hyperparameters
-  mu_pr ~ normal(0, 10);
-  sigma ~ cauchy(0, 5);
+  mu_pr ~ normal(0, 5);
+  sigma ~ cauchy(0, 2.5);
 
   // Individual parameters
-  con_pr     ~ normal(0, 5);
-  wgt_pun_pr ~ normal(0, 5);
-  wgt_rew_pr ~ normal(0, 5);
-  update_pr  ~ normal(0, 5);
+  con_pr     ~ normal(0, 2.5);
+  wgt_pun_pr ~ normal(0, 2.5);
+  wgt_rew_pr ~ normal(0, 2.5);
+  update_pr  ~ normal(0, 2.5);
 
   // Initial subject-level deck expectations
   array[N] vector[4] ev;
