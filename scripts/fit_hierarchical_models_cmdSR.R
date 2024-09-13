@@ -273,6 +273,10 @@ model_defaults <- list(
     data = c("N", "T", "Tsubj", "RTbound", "minRT", "RT", "choice", "shown", "outcome"),
     params = c("boundary", "tau", "beta", "drift_con", "wgt_pun", "wgt_rew", "update")
   ),
+  "igt_mod_group_hier_ev_ddm_tdc" = list(
+    data = c("N", "T", "Tsubj", "RTbound", "minRT", "RT", "choice", "shown", "outcome"),
+    params = c("boundary", "tau", "beta", "drift_con", "wgt_pun", "wgt_rew", "update")
+  ),
   "igt_mod_group_hier_ev" = list(
     data = c("N", "T", "Tsubj", "choice", "shown", "outcome"),
     params = c("con", "wgt_pun", "wgt_rew", "update")

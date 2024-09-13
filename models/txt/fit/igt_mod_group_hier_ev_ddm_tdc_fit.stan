@@ -117,29 +117,13 @@ model {
   // For each subject
   for (n in 1:N) {
     vector[Tsubj[n]] sensitivity = pow(theta_ts[:Tsubj[n]], drift_con[n]);
-    
-    print("Subject ", n, " initialization:");
-    print("  Tsubj: ", Tsubj[n]);
-    print("  drift_con: ", drift_con[n]);
-    print("  update: ", update[n]);
-    print("  wgt_pun: ", wgt_pun[n]);
-    print("  wgt_rew: ", wgt_rew[n]);
-    print("  boundary: ", boundary[n]);
-    print("  tau: ", tau[n]);
-    print(" minRT: ", minRT[n]);
-    print("  beta: ", beta[n]);
-    print("  Initial EV: ", ev[n]);
-    print("  First few choices: ", choice[n][1:min(5, Tsubj[n])]);
-    print("  First few shown: ", shown[n][1:min(5, Tsubj[n])]);
-    print("  First few outcomes: ", outcome[n][1:min(5, Tsubj[n])]);
-    print("  First few RTs: ", RT[n][1:min(5, Tsubj[n])]);
 
     ev[n] = igt_model_lp(
-      choice[n][:Tsubj[n]], shown[n][:Tsubj[n]], outcome[n][:Tsubj[n]],
-      RT[n][:Tsubj[n]], ev[n], Tsubj[n],
-      sensitivity, update[n], wgt_pun[n],
-      wgt_rew[n], boundary[n], tau[n], beta[n]
-      );
+			choice[n][:Tsubj[n]], shown[n][:Tsubj[n]], outcome[n][:Tsubj[n]],
+			RT[n][:Tsubj[n]], ev[n], Tsubj[n],
+			sensitivity, update[n], wgt_pun[n],
+			wgt_rew[n], boundary[n], tau[n], beta[n]
+			);
   }
 }
 
