@@ -77,7 +77,7 @@ transformed parameters {
   vector<lower=1e-6>[N] 			boundary;
   vector<lower=RTbound - 1e-5, upper=RTmax>[N] tau;
   vector<lower=0, upper=1>[N] 		beta;
-  vector<lower=-2, upper=2>[N] 		drift_con;
+  vector<lower=-5, upper=5>[N] 		drift_con;
   vector<lower=0, upper=1>[N] 		wgt_pun;
   vector<lower=0, upper=1>[N] 		wgt_rew;
   vector<lower=0, upper=1>[N] 		update;
