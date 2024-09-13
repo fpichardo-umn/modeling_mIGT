@@ -115,10 +115,10 @@ transformed parameters {
 model {
   // Hyperparameters
   mu_pr ~ normal(0, 2.5);
-  sigma ~ cauchy(0, 2);
+  sigma ~ normal(0, 2);
 
   // Individual parameters
-  boundary_pr  ~ normal(0, 2.5);
+  boundary_pr  ~ normal(0, 2);
   tau_pr       ~ normal(0, 2);
   beta_pr      ~ normal(0, 2);
   drift_con_pr ~ normal(0, 2);
@@ -126,7 +126,7 @@ model {
   alpha_pr     ~ normal(0, 2);
   A_pr         ~ normal(0, 2);
   update_pe_pr ~ normal(0, 2);
-  exp_max_pr   ~ normal(0, 2.5);
+  exp_max_pr   ~ normal(0, 2);
 
   // Initial subject-level deck expectations
   array[N] vector[4] exploit;
