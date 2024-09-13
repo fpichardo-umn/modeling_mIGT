@@ -82,7 +82,7 @@ transformed parameters {
   vector<lower=0, upper=1>[N] 		wgt_rew;
   vector<lower=0, upper=1>[N] 		update;
 
-  boundary  = exp(inv_logit(mu_pr[1] + sigma[1]*boundary_pr) * 10 - 5);
+  boundary  = exp(inv_logit(mu_pr[1] + sigma[1]*boundary_pr) * 5 - 2); // Range: -2,3 -> 0.135,20.08
   tau       = inv_logit(mu_pr[2] + sigma[2] * tau_pr) .* (minRTdiff - buffer) + RTbound;
   beta      = inv_logit(to_vector(mu_pr[3] + sigma[3] * beta_pr));
   drift_con = inv_logit(to_vector(mu_pr[4] + sigma[4] * drift_con_pr)) * 4 - 2;
@@ -94,10 +94,10 @@ transformed parameters {
 model {
   // Hyperparameters
   to_vector(mu_pr) ~ normal(0, 2.5);
-  to_vector(sigma) ~ cauchy(0, 2);
+  to_vector(sigma) ~ normal(0, 2);
 
   // Priors
-  to_vector(boundary_pr)  ~ normal(0, 2.5);
+  to_vector(boundary_pr)  ~ normal(0, 2);
   to_vector(tau_pr)       ~ normal(0, 2);
   to_vector(beta_pr)      ~ normal(0, 2);
   to_vector(drift_con_pr) ~ normal(0, 2);
@@ -128,11 +128,6 @@ model {
     print("  tau: ", tau[n]);
     print(" minRT: ", minRT[n]);
     print("  beta: ", beta[n]);
-    print("  Initial EV: ", ev[n]);
-    print("  First few choices: ", choice[n][1:min(5, Tsubj[n])]);
-    print("  First few shown: ", shown[n][1:min(5, Tsubj[n])]);
-    print("  First few outcomes: ", outcome[n][1:min(5, Tsubj[n])]);
-    print("  First few RTs: ", RT[n][1:min(5, Tsubj[n])]);
 
     ev[n] = igt_model_lp(
       choice[n][:Tsubj[n]], shown[n][:Tsubj[n]], outcome[n][:Tsubj[n]],

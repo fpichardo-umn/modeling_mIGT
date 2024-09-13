@@ -21,8 +21,8 @@ functions {
       // EV and sensitivity
       Info[t] = (local_exploit[curDeck] + local_explore[curDeck]) * sensitivity[t];
       
-      // Update exploration values
-      local_explore += (exp_max - local_explore)*explore_upd;
+      // Update exploration values when possible to select
+      local_explore[curDeck] += (exp_max - local_explore[curDeck])*explore_upd;
 
       // Compute utility
       curUtil = pow(abs(outcome[t]), alpha) * (outcome[t] > 0 ? 1 : lambda) * choice[t];
@@ -85,7 +85,7 @@ transformed parameters {
   alpha     = inv_logit(mu_pr[3] + sigma[3]*alpha_pr);
   A         = inv_logit(mu_pr[4] + sigma[4]*A_pr) * 3;
   update_pe = inv_logit(mu_pr[5] + sigma[5]*update_pe_pr);
-  exp_max   = exp(inv_logit(mu_pr[6] + sigma[6]*exp_max_pr) * 4);
+  exp_max   = exp(inv_logit(mu_pr[6] + sigma[6]*exp_max_pr) * 2);
 }
 
 model {
@@ -106,7 +106,7 @@ model {
   array[N] vector[4] explore;
   for (n in 1:N) {
     exploit[n] = rep_vector(0., 4);
-    explore[n] = rep_vector(0., 4);
+    explore[n] = rep_vector(exp_max[n], 4); // Begin with high exploration
   }
 
   // Initial trial data for theta

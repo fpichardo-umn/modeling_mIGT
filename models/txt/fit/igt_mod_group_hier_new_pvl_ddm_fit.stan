@@ -21,8 +21,8 @@ functions {
       // Compute drift rate
       drift_rates[t] = (local_exploit[curDeck] + local_explore[curDeck]) * sensitivity[t];
       
-      // Update exploration values for all decks
-      local_explore += (exp_max - local_explore) * explore_upd;
+      // Update exploration values  when possible to select
+      local_explore[curDeck] += (exp_max - local_explore[curDeck]) * explore_upd;
       
       // Store indices for play and pass
       if (choice[t] == 1) {
@@ -109,7 +109,7 @@ transformed parameters {
   alpha     = inv_logit(mu_pr[6] + sigma[6]*alpha_pr);
   A         = inv_logit(mu_pr[7] + sigma[7]*A_pr) * 3;
   update_pe = inv_logit(mu_pr[8] + sigma[8]*update_pe_pr);
-  exp_max   = exp(inv_logit(mu_pr[9] + sigma[9]*exp_max_pr) * 4);
+  exp_max   = exp(inv_logit(mu_pr[9] + sigma[9]*exp_max_pr) * 2);
 }
 
 model {
@@ -133,7 +133,7 @@ model {
   array[N] vector[4] explore;
   for (n in 1:N) {
     exploit[n] = rep_vector(0., 4);
-    explore[n] = rep_vector(0., 4);
+    explore[n] = rep_vector(exp_max[n], 4); // Begin with high exploration
   }
 
   // Initial trial data for theta
