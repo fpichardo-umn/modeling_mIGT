@@ -3,7 +3,7 @@ functions {
   vector igt_model_lp(
     array[] int choice, array[] int shown, array[] real outcome,
     array[] real RT, vector ev, int Tsub,
-    vector sensitivity, real update, real wgt_pun,
+    real drift_con, real update, real wgt_pun,
     real wgt_rew, real boundary, real tau, real beta
     ) {
     vector[4] local_ev = ev;
@@ -16,7 +16,7 @@ functions {
     // Compute drift rates and update local_ev
     for (t in 1:Tsub) {
       int curDeck = shown[t];
-      drift_rates[t] = local_ev[curDeck] * sensitivity[t];
+      drift_rates[t] = local_ev[curDeck] * drift_con;
       
       // Update local_ev
       real curUtil = ((outcome[t] > 0 ? wgt_rew : wgt_pun)) * outcome[t] * choice[t];
@@ -85,7 +85,7 @@ transformed parameters {
   boundary  = exp(inv_logit(mu_pr[1] + sigma[1]*boundary_pr) * 10 - 5);
   tau       = inv_logit(mu_pr[2] + sigma[2] * tau_pr) .* (minRTdiff - buffer) + RTbound;
   beta      = inv_logit(to_vector(mu_pr[3] + sigma[3] * beta_pr));
-  drift_con = inv_logit(to_vector(mu_pr[4] + sigma[4] * drift_con_pr)) * 4 - 2;
+  drift_con = inv_logit(to_vector(mu_pr[4] + sigma[4] * drift_con_pr)) * 10 - 5;
   wgt_pun   = inv_logit(to_vector(mu_pr[5] + sigma[5] * wgt_pun_pr));
   wgt_rew   = inv_logit(to_vector(mu_pr[6] + sigma[6] * wgt_rew_pr));
   update    = inv_logit(to_vector(mu_pr[7] + sigma[7] * update_pr));
@@ -116,12 +116,10 @@ model {
 
   // For each subject
   for (n in 1:N) {
-    vector[Tsubj[n]] sensitivity = pow(theta_ts[:Tsubj[n]], drift_con[n]);
-
     ev[n] = igt_model_lp(
 			choice[n][:Tsubj[n]], shown[n][:Tsubj[n]], outcome[n][:Tsubj[n]],
 			RT[n][:Tsubj[n]], ev[n], Tsubj[n],
-			sensitivity, update[n], wgt_pun[n],
+			drift_con[n], update[n], wgt_pun[n],
 			wgt_rew[n], boundary[n], tau[n], beta[n]
 			);
   }
