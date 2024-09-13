@@ -1,0 +1,531 @@
+functions {
+				// IGT Models //
+    // RL only model
+  vector igt_mod_rl_model_lp(
+			array[] int choice, array[] int shown, array[] real outcome,
+			vector ev, int Tsub,
+			vector sensitivity_params,
+			vector utility_params,
+			vector learning_params
+			) {
+    // Define values
+    real curUtil;   // Current utility
+    int  curDeck;   // Current deck
+    vector[Tsub] Info;
+
+    // Accumulation
+    vector[4] local_ev = ev;
+
+    // Accumulate EVs/Info
+    for (t in 1:Tsub) {
+      // Deck presented to sub
+      curDeck = shown[t];
+
+      // EV and sensitivity
+      Info[t] = igt_con_TYPE_info(t, {local_ev[curDeck]}, sensitivity_params);
+
+      // Compute utility
+      curUtil = igt_mod_util_RULE_NUMp(choice, outcome, utility_params);
+
+      // Update expected values
+      local_ev = igt_learn_RULE_NUMp(local_ev, curUtil, curDeck, choice, learning_params);
+    }
+    
+    // Bernoulli distribution to decide whether to play the current deck or not
+    target += bernoulli_logit_lpmf(choice | Info);
+    
+    return local_ev;
+  }
+
+
+
+
+				// DDM only model //
+  vector igt_mod_ddm_model_lp(
+			   array[] real RTplay, array[] real RTpass,
+			   int Nplay, int Npass,
+			   vector ddm_params
+			) {
+    // Extract parameters
+    real boundary = ddm_params[1];
+    real tau      = ddm_params[2];
+    real beta     = ddm_params[3];
+    real drift    = ddm_params[4];
+
+    // Compute log probability for RTs/choice
+    // Play Trials
+    target += wiener_lpdf(RTplay[:Nplay] | boundary, tau, beta, drift);
+
+    // Pass Trials
+    target += wiener_lpdf(RTpass[:Npass] | boundary, tau, 1-beta, -drift);
+  }
+
+
+
+
+				// RL+DDM model //
+  vector igt_mod_rl_ddm_model_lp(
+			     array[] int choice, array[] int shown, array[] real outcome,
+			     array[] real RT, vector ev, int Tsub,
+			     vector sensitivity_params,
+			     vector utility_params,
+			     vector learning_params,
+			     vector ddm_params
+			) {
+    // Extract parameters
+    real boundary = ddm_params[1];
+    real tau      = ddm_params[2];
+    real beta     = ddm_params[3];
+
+    // Define values
+    real curUtil;   // Current utility
+    int  curDeck;   // Current deck
+    vector[Tsub] Info;
+
+    // Accumulation
+    vector[4]       local_ev = ev;
+    vector[Tsub]    drift_rates;
+    array[Tsub] int play_indices;
+    array[Tsub] int pass_indices;
+    int             play_count = 0;
+    int             pass_count = 0;
+
+    // Accumulate EVs/Drift Rates
+    for (t in 1:Tsub) {
+      // Deck presented to sub
+      curDeck = shown[t];
+
+      // Drift Rates (same as "info")
+      drift_rates[t] = igt_con_TYPE_info(t, {local_ev[curDeck]}, sensitivity_params);
+
+      // Compute utility
+      curUtil        = igt_mod_util_RULE_NUMp(choice, outcome, utility_params);
+
+      // Update expected values
+      local_ev       = igt_learn_RULE_NUMp(local_ev, curUtil, curDeck, choice, learning_params);
+      
+      // Store indices for play and pass
+      if (choice[t] == 1) {
+        play_count += 1;
+        play_indices[play_count] = t;
+      } else {
+        pass_count += 1;
+        pass_indices[pass_count] = t;
+      }
+    }
+    
+    // Compute log probability for RTs/choice
+    // Play Trials
+    target += wiener_lpdf(RT[play_indices[:play_count]] | boundary, tau, beta, drift_rates[play_indices[:play_count]]);
+
+    // Pass Trials
+    target += wiener_lpdf(RT[pass_indices[:pass_count]] | boundary, tau, 1-beta, -drift_rates[pass_indices[:pass_count]]);
+    
+    return local_ev;
+  }
+
+
+
+				// Utility Rules //
+    // Linear, 2-param
+  vector igt_mod_util_linear_2p(
+    int choice, real outcome,
+    vector utility_params
+    ) {
+
+    // Extract parameters
+    real wgt_rew = utility_params[1];
+    real wgt_pun = utility_params[2];
+
+    // Compute Utility
+    real curUtil = ((outcome > 0 ? wgt_rew : wgt_pun)) * outcome * choice;
+    
+    return curUtil;
+  }
+
+    // Linear, 1-param: Balance of Reward vs Punishment 
+  vector igt_mod_util_linear_1p(
+    int choice, real outcome,
+    vector utility_params
+    ) {
+
+    // Extract parameters
+    real wgt_rew = utility_params[1];
+
+    // Compute Utility
+    real curUtil = ((outcome > 0 ? wgt_rew : 1 - wgt_rew))  * outcome * choice;
+    
+    return curUtil;
+  }
+
+    // Non-Linear, 2-param: Gain - suppress vs amplify util; Loss - linear scaling
+  vector igt_mod_util_nonlinear_2p(
+    int choice, real outcome,
+    vector utility_params
+    ) {
+
+    // Extract parameters
+    real wgt_gain = utility_params[1];
+    real loss_aversion = utility_params[2];
+
+    // Compute Utility
+    real curUtil = pow(abs(outcome), wgt_gain) * (outcome > 0 ? 1 : loss_aversion) * choice;
+    
+    return curUtil;
+  }
+
+    // Non-Linear, 1-param: Gain - suppress vs amplify util
+  vector igt_mod_util_nonlinear_1p(
+    int choice, real outcome,
+    vector utility_params
+    ) {
+
+    // Extract parameters
+    real wgt_gain = utility_params[1];
+
+    // Compute Utility
+    real curUtil = pow(abs(outcome), wgt_gain) * choice;
+    
+    return curUtil;
+  }
+
+
+
+				// Learning Rules //
+    // Delta, 1-param: Only scale new info
+  vector igt_learn_delta_1p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real update = learning_params[1];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Update selected deck only
+    sub_local_ev[curDeck] += (curUtil - sub_local_ev[curDeck]) * update * choice;
+    
+    return sub_local_ev;
+  }
+
+    // Delta, 1-param: Balance of past history vs new info
+  vector igt_learn_delta_bal_1p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real update = learning_params[1];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Update selected deck only
+    sub_local_ev[curDeck] += (curUtil - 2 * sub_local_ev[curDeck]) * update * choice;
+    
+    return sub_local_ev;
+  }
+
+   // Delta, 2-param: Scale new info based on over/under-estimate
+  vector igt_learn_delta_2p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real update_gain = learning_params[1];
+    real update_loss = learning_params[1];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Update selected deck only
+    sub_local_ev[curDeck] += (curUtil - sub_local_ev[curDeck]) * ((curUtil > 0 ? update_gain : update_loss)) * choice;
+    
+    return sub_local_ev;
+  }
+
+   // Delta, 2-param: Balance of past history vs new info scaled based on over/under-estimate 
+  vector igt_learn_delta_bal_2p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real update_gain = learning_params[1];
+    real update_loss = learning_params[1];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Update selected deck only
+    sub_local_ev[curDeck] += (curUtil - 2 * sub_local_ev[curDeck]) * ((curUtil > 0 ? update_gain : update_loss)) * choice;
+    
+    return sub_local_ev;
+  }
+
+    // Decay, 1-param: Simple RL-decay model (focus on recency)
+  vector igt_learn_decay_1p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real decay_factor = learning_params[1];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Decay all decks
+    sub_local_ev *= decay_factor;
+
+    // Update selected deck with current utility
+    sub_local_ev[curDeck] += curUtil * choice;
+    
+    return sub_local_ev;
+  }
+
+    // Decay constrained, 1-param: Constrained RL-decay model 
+      // "avoid an embedded association between the recency parameter...and the expectancies" [:10.1016/j.geb.2007.08.011]
+  vector igt_learn_decay_cons_1p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real decay_factor = learning_params[1];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Decay all decks
+    sub_local_ev *= decay_factor;
+
+    // Set selected deck to current utility
+    sub_local_ev[curDeck] += (1 - decay_factor) * curUtil * choice;
+    
+    return sub_local_ev;
+  }
+
+    // Decay, 2-param: Decay and learning
+      // Like constrained decay-RL but with separable update and decay parameters
+  vector igt_learn_decay_2p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real decay_factor = learning_params[1];
+    real update       = learning_params[2];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Decay all decks
+    sub_local_ev *= decay_factor;
+
+    // Set selected deck to current utility
+    sub_local_ev[curDeck] += curUtil * update * choice;
+    
+    return sub_local_ev;
+  }
+
+    // Decay, 3-param: Decay and learning, scaled based on over/under-estimate
+  vector igt_learn_decay_3p(
+    vector local_ev, real curUtil, int curDeck, int choice,
+    vector learning_params
+    ) {
+
+    // Extract parameters
+    real decay_factor = learning_params[1];
+    real update_gain  = learning_params[2];
+    real update_loss  = learning_params[3];
+
+    // Unsure if I can update local_ev - had to make a new one in the igt func // [ ]
+    vector sub_local_ev[4] = local_ev;
+
+    // Decay all decks
+    sub_local_ev *= decay_factor;
+
+    // Set selected deck to current utility
+    sub_local_ev[curDeck] += curUtil * ((curUtil > 0 ? update_gain : update_loss)) * choice;
+    
+    return sub_local_ev;
+  }
+
+
+
+				// Consistency Functions //
+  // Used in the model block before calling the igt model func
+    // Trial-Dependent: Increased exploitation as the task progresses
+  vector igt_con_tdc_gen(
+    int T, vector Tsubj,
+    vector sensitivity_params
+    ) {
+
+    // Extract parameters/Info
+    real con = sensitivity_params[1];
+
+    // Initial trial data for theta
+    vector[T] theta_ts = to_vector(linspaced_array(T, 1, T)) / 10.0;
+    vector[T] sensitivity;
+
+    // Define sensitivity
+    for (n in 1:N) {
+      sensitivity[:Tsubj[n]] = pow(theta_ts[:Tsubj[n]], con[n]);
+    }
+    
+    return sensitivity;
+  }
+
+    // Trial-Dependent
+  vector igt_con_tic_gen(
+    int T, vector Tsubj,
+    vector sensitivity_params
+    ) {
+
+    // Extract parameters/Info
+    real con = sensitivity_params[1];
+
+    // Define sensitivity
+    vector[T] sensitivity = pow(3, con) - 1;
+    
+    return sensitivity;
+  }
+
+
+
+				// Sensitivity Rules //
+  // Exploitation only
+    // TDC: Return the info
+  vector igt_mod_con_tdc_info(
+    int t, vector deck_info,
+    vector sensitivity_params
+    ) {
+
+    // Extract parameters/Info
+    real ev          = deck_info[1];
+    real sensitivity = sensitivity_params[1];
+
+    // TDC scaling
+    real Info = sensitivity[t] * ev;
+    
+    return Info;
+  }
+
+    // TIC: Return the info
+  vector igt_mod_con_tic_info(
+    int t, vector deck_info,
+    vector sensitivity_params
+    ) {
+
+    // Extract parameters/Info
+    real ev          = deck_info[1];
+    real sensitivity = sensitivity_params[1];
+
+    // TDC scaling
+    real Info = sensitivity * ev;
+    
+    return Info;
+  }
+
+  // Exploitation and Exploration //
+    // TDC: Return the info
+  vector igt_mod_con_tdc_info(
+    int t, vector deck_info,
+    vector sensitivity_params
+    ) {
+
+    // Extract parameters/Info
+    real ev          = deck_info[1];
+    real exp         = deck_info[2];
+    real sensitivity = sensitivity_params[1];
+
+    // TDC scaling
+    real Info = sensitivity[t] * ;
+    
+    return Info;
+  }
+
+    // TIC: Return the info
+  vector igt_mod_con_tic_info(
+    int t, vector deck_info,
+    vector sensitivity_params
+    ) {
+
+    // Extract parameters/Info
+    real ev          = deck_info[1];
+    real exp         = deck_info[2];
+    real sensitivity = sensitivity_params[1];
+
+    // TDC scaling
+    real Info = sensitivity * (ev + exp);
+    
+    return Info;
+  }
+
+
+
+				// Exploration Rules //
+    // Increase exploration for all decks
+  vector igt_mod_explore_gen_2p(
+    vector local_explore, int curDeck, int choice,
+    vector explore_params
+    ) {
+
+    // Extract parameters
+    real explore_max = explore_params[1];
+    real explore_upd = explore_params[2];
+
+    // Unsure if I can update local_explore - had to make a new one in the igt func // [ ]
+    vector sub_local_explore[4] = local_explore;
+
+    // Increase all decks
+    sub_local_explore += (exp_max - local_explore)*explore_upd;
+
+    // Set selected deck to 0
+    sub_local_explore[curDeck] *= -1 * (choice - 1);
+    
+    return local_explore;
+  }
+
+    // Increase exploration for presented and skipped decks only
+  vector igt_mod_explore_skip_2p(
+    vector local_explore, int curDeck, int choice,
+    vector explore_params
+    ) {
+
+    // Extract parameters
+    real explore_max = explore_params[1];
+    real explore_upd = explore_params[2];
+
+    // Unsure if I can update local_explore - had to make a new one in the igt func // [ ]
+    vector sub_local_explore[4] = local_explore;
+
+    // Increase all decks
+    sub_local_explore[curDeck] += (exp_max - local_explore[curDeck])*explore_upd;
+
+    // Set selected deck to 0
+    sub_local_explore[curDeck] *= -1 * (choice - 1);
+    
+    return local_explore;
+  }
+
+
+
+				// Perseveration Rules //
+    // 
+
+
+
+
+				// Frequency Rules //
+    // 
+
+
+
+
+}
+
