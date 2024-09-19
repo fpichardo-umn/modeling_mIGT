@@ -100,7 +100,7 @@ transformed parameters {
   vector<lower=0, upper=1>[N]  	   	update_pe;
   vector<lower=0>[N]  	  	   	exp_max;
   
-  boundary  = exp(inv_logit(mu_pr[1] + sigma[1]*boundary_pr) * 10 - 5);
+  boundary  = exp(inv_logit(mu_pr[1] + sigma[1]*boundary_pr) * 5 - 2); // Range: -2,3 -> 0.135,20.08
   tau 	    = inv_logit(mu_pr[2] + sigma[2]*tau_pr) .* (minRTdiff - buffer) + RTbound;
   beta 	    = inv_logit(mu_pr[3] + sigma[3]*beta_pr);
   drift_con = inv_logit(mu_pr[4] + sigma[4]*drift_con_pr) * 4 - 2;

@@ -208,3 +208,7 @@ Chain 2   Stan can't start sampling from this initial value.
 Chain 2 Rejecting initial value:
 Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 2   Stan can't start sampling from this initial value.
+Warning: 2 of 4 chains had an E-BFMI less than 0.3.
+See https://mc-stan.org/misc/warnings for details.
+
+slurmstepd: error: *** JOB 23412713 ON acn03 CANCELLED AT 2024-09-14T15:37:10 DUE TO TIME LIMIT ***

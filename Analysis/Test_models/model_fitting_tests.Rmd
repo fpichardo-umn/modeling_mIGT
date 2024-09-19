@@ -207,10 +207,92 @@ run_selected_diagnostics(model_fit_obj, steps_to_run = c("pairs_plot"), params =
 ```
 
 
+
 # EV DDM: 4 Param
 ##Hier Group
 ```{r}
 model_str = "igt_mod_group_hier_ev_ddm"
+
+group.hier.ev.model.fit.path = file.path(MODELS_RDS_FIT_DIR, paste0(model_str, "_fit.rds"))
+rds_pathname  = group.hier.ev.model.fit.path
+
+sample_df = wave1.raw
+```
+
+### Prep Data
+```{r}
+data_to_extract = c("N", "T", "Tsubj", "RTbound", "minRT", "RT", "choice", "shown", "outcome")
+model_params = c("boundary", "tau", "beta", "drift_con", "exp_upd", "lambda", "alpha", "A", "update_pe", "exp_max")
+```
+
+### Load fit
+```{r}
+fit_output_file = sub('/models/', '/Data/', paste0(tools::file_path_sans_ext(rds_pathname), "_output.rds"))
+
+model_fit_obj = readRDS(file = fit_output_file)
+```
+
+
+### Diagnostics
+#### Divergences
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("divergences"))
+```
+
+#### Traceplots
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("traceplots"))
+```
+
+#### Display chain density plots (10 per page)
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("density_plots_by_chain"), plots_pp = 10)
+```
+
+#### Display overall density plots (10 per page)
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("overall_density_plots"), plots_pp = 10)
+```
+
+#### R-hat
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("rhat_all"), params = model_fit_obj$all_params)
+```
+
+#### Effective Sample Size
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("ess_all"), params = model_fit_obj$all_params, lower_than_q = 0.1)
+```
+
+#### Monte Carlo Standard Error
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("mcse_all"), params = model_fit_obj$all_params)
+```
+
+#### Autocorrelation
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("autocorrelation"), params = head(model_fit_obj$params, 8))
+```
+
+#### Parallel Coordinates Plot
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("parallel_coordinates"), params = head(model_fit_obj$params, 12))
+```
+
+#### Pairs Plot
+```{r}
+run_selected_diagnostics(model_fit_obj, steps_to_run = c("pairs_plot"), params = head(model_fit_obj$params, 8))
+```
+
+
+# New PVL
+
+####
+#
+####
+##Hier Group
+```{r}
+model_str = "igt_mod_group_hier_new_pvl"
 
 group.hier.ev.model.fit.path = file.path(MODELS_RDS_FIT_DIR, paste0(model_str, "_fit.rds"))
 rds_pathname  = group.hier.ev.model.fit.path

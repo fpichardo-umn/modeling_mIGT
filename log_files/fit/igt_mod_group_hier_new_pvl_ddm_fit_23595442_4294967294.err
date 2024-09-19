@@ -1,0 +1,73 @@
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 2 Rejecting initial value:
+Chain 2   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 2   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 1 Rejecting initial value:
+Chain 1   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 1   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 4 Rejecting initial value:
+Chain 4   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 4   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+Chain 3 Rejecting initial value:
+Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
+Chain 3   Stan can't start sampling from this initial value.
+slurmstepd: error: *** JOB 23595442 ON acn07 CANCELLED AT 2024-09-17T06:08:45 DUE TO TIME LIMIT ***

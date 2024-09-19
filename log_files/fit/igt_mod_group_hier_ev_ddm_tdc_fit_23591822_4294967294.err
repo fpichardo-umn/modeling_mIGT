@@ -25,3 +25,4 @@ Chain 3   Stan can't start sampling from this initial value.
 Chain 3 Rejecting initial value:
 Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 3   Stan can't start sampling from this initial value.
+slurmstepd: error: *** JOB 23591822 ON acn14 CANCELLED AT 2024-09-17T04:32:43 DUE TO TIME LIMIT ***

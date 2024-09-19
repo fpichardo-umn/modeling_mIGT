@@ -1,0 +1,2 @@
+Warning message:
+E-BFMI not computed because it is undefined for posterior chains of length less than 3. 

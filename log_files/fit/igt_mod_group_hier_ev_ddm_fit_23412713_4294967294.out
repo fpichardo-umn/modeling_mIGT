@@ -43,3 +43,128 @@ Chain 4 Iteration:  707 / 1001 [ 70%]  (Warmup)
 Chain 2 Iteration:  505 / 1001 [ 50%]  (Warmup) 
 Chain 4 Iteration:  808 / 1001 [ 80%]  (Warmup) 
 Chain 2 Iteration:  606 / 1001 [ 60%]  (Warmup) 
+Chain 4 Iteration:  909 / 1001 [ 90%]  (Warmup) 
+Chain 2 Iteration:  707 / 1001 [ 70%]  (Warmup) 
+Chain 4 Iteration: 1001 / 1001 [100%]  (Sampling) 
+Chain 4 finished in 231093.0 seconds.
+Chain 2 Iteration:  808 / 1001 [ 80%]  (Warmup) 
+Chain 2 Iteration:  909 / 1001 [ 90%]  (Warmup) 
+Chain 2 Iteration: 1001 / 1001 [100%]  (Sampling) 
+Chain 2 finished in 248326.0 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 209072.8 seconds.
+Total execution time: 248338.3 seconds.
+
+Checkpoint saved at iteration 1001 
+Running MCMC with 4 parallel chains...
+
+Chain 1 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 4 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 3 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 3 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 4 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 1 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 3 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 4 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 1 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 3 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 4 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 3 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 4 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 2 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 1 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 3 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 4 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 1 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 3 finished in 40486.7 seconds.
+Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 2 finished in 41502.3 seconds.
+Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 4 finished in 43163.2 seconds.
+Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 1 finished in 44367.7 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 42380.0 seconds.
+Total execution time: 44396.0 seconds.
+
+Checkpoint saved at iteration 2001 
+Running MCMC with 4 parallel chains...
+
+Chain 2 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 1 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 3 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 4 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 1 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 3 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 4 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 1 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 3 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 4 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 1 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 4 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 3 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 2 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 4 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 3 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 1 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 4 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 3 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 4 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 3 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 4 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 3 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 4 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 3 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 4 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 3 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 4 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 4 finished in 41646.4 seconds.
+Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 1 finished in 41734.8 seconds.
+Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 2 finished in 42650.0 seconds.
+Chain 3 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 3 finished in 42747.6 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 42194.7 seconds.
+Total execution time: 42776.5 seconds.
+
