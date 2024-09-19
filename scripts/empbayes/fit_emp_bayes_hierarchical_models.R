@@ -9,7 +9,6 @@ suppressPackageStartupMessages({
   library(foreign)
   library(dplyr)
   library(tidyr)
-  library(truncnorm)
   library(ggplot2)
   library(bayesplot)
   library(jsonlite)
@@ -89,7 +88,7 @@ if (is.null(opt$params)) {
   if (is.null(model_defaults[[full_model_name]]$params)) {
     stop("No default parameters found for model: ", full_model_name)
   }
-  opt$params <- paste(model_defaults[[full_model_name]]$params, collapse = ",")
+  opt$params <- model_defaults[[full_model_name]]$params
 }
 
 # Adjust parameters if in debug mode
@@ -185,7 +184,7 @@ fit <- fit_and_save_model(opt$task, opt$group, opt$model, "fit", data_list,
                           n_trials = opt$n_trials,
                           n_warmup = opt$n_warmup, n_iter = opt$n_iter, n_chains = opt$n_chains,
                           adapt_delta = opt$adapt_delta, max_treedepth = opt$max_treedepth,
-                          model_params = strsplit(opt$params, ",")[[1]],
+                          model_params = opt$params,
                           output_dir = DATA_RDS_eB_DIR, emp_bayes = T)
 
 # Check model diagnostics

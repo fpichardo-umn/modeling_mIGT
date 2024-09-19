@@ -11,7 +11,7 @@ suppressPackageStartupMessages({
 ## Functions
 # Fit functions
 # Function to fit and save a model
-fit_and_save_model <- function(task, group_type, model_name, model_type, data_list, n_subs, n_trials, n_warmup, n_iter, n_chains, adapt_delta, max_treedepth, model_params, dry_run = FALSE, checkpoint_interval = 1000, output_dir = NULL, emp_bayes = FALSE) {
+fit_and_save_model <- function(task, group_type, model_name, model_type, data_list, n_subs, n_trials, n_warmup, n_iter, n_chains, adapt_delta, max_treedepth, model_params, dry_run = FALSE, checkpoint_interval = 1000, output_dir = NULL, emp_bayes = FALSE, informative_priors = NULL) {
   model_str <- paste(task, group_type, model_name, sep="_")
   model_path <- file.path(file.path(MODELS_BIN_DIR, model_type), paste0(model_str, "_", model_type, ".stan"))
   stanmodel_arg <- cmdstan_model(exe_file = model_path)
@@ -25,7 +25,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
     }
   }
   
-  output_file <- file.path(output_dir, paste0(model_str, "_", model_type, if(emp_bayes) "_desc-emp_hier" else "", "_output.rds"))
+  output_file <- file.path(output_dir, paste0(model_str, "_", model_type, if(emp_bayes) "_desc-emp" else "", "_output.rds"))
   checkpoint_file <- paste0(tools::file_path_sans_ext(output_file), "_checkpoint.rds")
   
   if (!file.exists(dirname(output_file))) {
@@ -37,18 +37,26 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
     cat("Data list:\n")
     print(str(data_list))
     cat("Parameters:\n")
-    print(str(model_params))
     cat("n_warmup =", n_warmup, "\n")
     cat("n_iter =", n_iter, "\n")
     cat("n_chains =", n_chains, "\n")
     cat("adapt_delta =", adapt_delta, "\n")
     cat("max_treedepth =", max_treedepth, "\n")
-    cat("\n", "File to be save as:", output_file, "\n")
+    if (!is.null(informative_priors)) {
+      cat("Using informative priors\n")
+    }
+    cat("\n", "File to be saved as:", output_file, "\n")
     cat("\n", "Output folder exists:", dirname(output_file), "\n")
     return(NULL)
   }
   
   cat("Fitting model:", model_str, "\n")
+  
+  # Add informative priors to data_list if provided
+  if (!is.null(informative_priors)) {
+    data_list$pr_mu <- sapply(model_params, function(param) informative_priors[[param]]["pr_mu"])
+    data_list$pr_sigma <- sapply(model_params, function(param) informative_priors[[param]]["pr_sigma"])
+  }
   
   # Check if there's a checkpoint to resume from
   if (file.exists(checkpoint_file)) {
@@ -212,6 +220,7 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   cat("Extracting parameters\n")
   fit$params <- extract_params(fit$all_params, n_subs, main_params_vec = model_params)
   fit$params <- unname(fit$params)
+  fit$model_params = model_params
   
   cat("Saving fitted model to:", output_file, "\n")
   saveRDS(fit, file = output_file)
@@ -294,6 +303,55 @@ stratified_split <- function(data, props) {
 
 # Diagnostics
 ## Empirical Bayes diagnostics check
+validate_empirical_bayes <- function(hier_fit, emp_fit, model_params, subs_df, n_samples = 1000) {
+  validation_results <- list()
+  
+  # Get subjects used in hierarchical fit
+  hier_subs <- subs_df$sid[subs_df$set == "hier"]
+  
+  for (param in model_params) {
+    # Extract subject-level parameters for both fits
+    hier_params <- hier_fit$draws[,, grep(paste0(param, "_pr\\["), hier_fit$all_params)]
+    emp_params <- emp_fit$draws[,, grep(paste0(param, "_pr\\["), emp_fit$all_params)]
+    
+    # Ensure we're comparing the same subjects
+    n_subjects <- min(ncol(hier_params), ncol(emp_params))
+    
+    # Sample from posterior distributions
+    sample_indices <- sample(nrow(hier_params), n_samples, replace = TRUE)
+    
+    diffs <- matrix(nrow = n_samples, ncol = n_subjects)
+    for (i in 1:n_subjects) {
+      hier_samples <- hier_params[sample_indices, i]
+      emp_samples <- emp_params[sample_indices, i]
+      diffs[, i] <- emp_samples - hier_samples
+    }
+    
+    # Calculate summary statistics
+    validation_results[[param]] <- list(
+      mean_diff = colMeans(diffs),
+      median_diff = apply(diffs, 2, median),
+      sd_diff = apply(diffs, 2, sd),
+      quantiles = t(apply(diffs, 2, quantile, probs = c(0.025, 0.25, 0.75, 0.975)))
+    )
+    
+    # Create a density plot of differences
+    plot_data <- data.frame(diff = as.vector(diffs))
+    p <- ggplot(plot_data, aes(x = diff)) +
+      geom_density(fill = "blue", alpha = 0.5) +
+      ggtitle(paste("Difference in", param, "estimates")) +
+      xlab("Empirical Bayes - Hierarchical") +
+      theme_minimal()
+    
+    validation_results[[param]]$plot <- p
+    
+    # Add subject IDs to results
+    validation_results[[param]]$subjects <- hier_subs[1:n_subjects]
+  }
+  
+  return(validation_results)
+}
+
 check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 0.75, mcse_threshold = 0.1) {
   # Check divergences
   sampler_diagnostics <- fit$sampler_diagnostics

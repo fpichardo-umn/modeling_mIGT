@@ -60,10 +60,10 @@ transformed parameters {
   vector<lower=0, upper=1>[N]  wgt_rew;
   vector<lower=0, upper=1>[N]  update;
   
-  con     = inv_logit(mu_pr[1] + sigma[1]*con_pr) * 4 - 2;
-  wgt_pun = inv_logit(mu_pr[2] + sigma[2]*wgt_pun_pr);
-  wgt_rew = inv_logit(mu_pr[3] + sigma[3]*wgt_rew_pr);
-  update  = inv_logit(mu_pr[4] + sigma[4]*update_pr);
+  con     = inv_logit(con_pr) * 4 - 2;
+  wgt_pun = inv_logit(wgt_pun_pr);
+  wgt_rew = inv_logit(wgt_rew_pr);
+  update  = inv_logit(update_pr);
 }
 
 model {
