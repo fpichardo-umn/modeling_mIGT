@@ -1,0 +1,30 @@
+{
+  "igt_mod_group_hier_ddm": {
+    "data": ["N", "Nplay", "Npass", "Nplay_max", "Npass_max", "T", "Tsubj", "RTbound", "minRT", "RTpass", "RTplay"],
+    "params": ["boundary", "tau", "beta", "drift"]
+  },
+  "igt_mod_group_hier_ev_ddm": {
+    "data": ["N", "T", "Tsubj", "RTbound", "minRT", "RT", "choice", "shown", "outcome"],
+    "params": ["boundary", "tau", "beta", "drift_con", "wgt_pun", "wgt_rew", "update"]
+  },
+  "igt_mod_group_hier_ev_ddm_tic": {
+    "data": ["N", "T", "Tsubj", "RTbound", "minRT", "RT", "choice", "shown", "outcome"],
+    "params": ["boundary", "tau", "beta", "drift_con", "wgt_pun", "wgt_rew", "update"]
+  },
+  "igt_mod_group_hier_ev_ddm_tdc": {
+    "data": ["N", "T", "Tsubj", "RTbound", "minRT", "RT", "choice", "shown", "outcome"],
+    "params": ["boundary", "tau", "beta", "drift_con", "wgt_pun", "wgt_rew", "update"]
+  },
+  "igt_mod_group_hier_ev": {
+    "data": ["N", "T", "Tsubj", "choice", "shown", "outcome"],
+    "params": ["con", "wgt_pun", "wgt_rew", "update"]
+  },
+  "igt_mod_group_hier_new_pvl_ddm": {
+    "data": ["N", "T", "Tsubj", "RTbound", "minRT", "RT", "choice", "shown", "outcome"],
+    "params": ["boundary", "tau", "beta", "drift_con", "exp_upd", "lambda", "alpha", "A", "update_pe", "exp_max"]
+  },
+  "igt_mod_group_hier_new_pvl": {
+    "data": ["N", "T", "Tsubj", "choice", "shown", "outcome"],
+    "params": ["con", "exp_upd", "lambda", "alpha", "A", "update_pe", "exp_max"]
+  }
+}

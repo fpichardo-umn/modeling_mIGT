@@ -10,6 +10,220 @@ suppressPackageStartupMessages({
 
 ## Functions
 # Fit functions
+# Function to fit and save a model
+fit_and_save_model <- function(task, group_type, model_name, model_type, data_list, n_subs, n_trials, n_warmup, n_iter, n_chains, adapt_delta, max_treedepth, model_params, dry_run = FALSE, checkpoint_interval = 1000, output_dir = NULL, emp_bayes = FALSE) {
+  model_str <- paste(task, group_type, model_name, sep="_")
+  model_path <- file.path(file.path(MODELS_BIN_DIR, model_type), paste0(model_str, "_", model_type, ".stan"))
+  stanmodel_arg <- cmdstan_model(exe_file = model_path)
+  
+  # Determine output directory
+  if (is.null(output_dir)) {
+    if (emp_bayes) {
+      output_dir <- DATA_RDS_eB_DIR
+    } else {
+      output_dir <- file.path(DATA_DIR, "rds")
+    }
+  }
+  
+  output_file <- file.path(output_dir, paste0(model_str, "_", model_type, if(emp_bayes) "_desc-emp_hier" else "", "_output.rds"))
+  checkpoint_file <- paste0(tools::file_path_sans_ext(output_file), "_checkpoint.rds")
+  
+  if (!file.exists(dirname(output_file))) {
+    stop("Output folder does not exist. Expected path: ", output_file)
+  }
+  
+  if (dry_run) {
+    cat("Dry run for model:", model_str, "\n")
+    cat("Data list:\n")
+    print(str(data_list))
+    cat("Parameters:\n")
+    print(str(model_params))
+    cat("n_warmup =", n_warmup, "\n")
+    cat("n_iter =", n_iter, "\n")
+    cat("n_chains =", n_chains, "\n")
+    cat("adapt_delta =", adapt_delta, "\n")
+    cat("max_treedepth =", max_treedepth, "\n")
+    cat("\n", "File to be save as:", output_file, "\n")
+    cat("\n", "Output folder exists:", dirname(output_file), "\n")
+    return(NULL)
+  }
+  
+  cat("Fitting model:", model_str, "\n")
+  
+  # Check if there's a checkpoint to resume from
+  if (file.exists(checkpoint_file)) {
+    cat("Resuming from checkpoint\n")
+    checkpoint <- readRDS(checkpoint_file)
+    current_iter <- checkpoint$current_iter
+    accumulated_samples <- checkpoint$accumulated_samples
+    accumulated_diagnostics <- checkpoint$accumulated_diagnostics
+    step_size <- checkpoint$step_size
+    inv_metric <- checkpoint$inv_metric
+    warmup_done <- checkpoint$warmup_done
+  } else {
+    current_iter <- 0
+    accumulated_samples <- list()
+    accumulated_diagnostics <- list()
+    step_size <- NULL
+    inv_metric <- NULL
+    warmup_done <- FALSE
+  }
+  
+  total_iter <- n_warmup + n_iter
+  
+  while (current_iter < total_iter) {
+    remaining_iter <- min(checkpoint_interval, total_iter - current_iter)
+    
+    if (!warmup_done) {
+      # Initial run or warmup not complete
+      iter_to_run <- max(n_warmup + 1, remaining_iter)  # Ensure iter > warmup
+      fit <- stanmodel_arg$sample(
+        data = data_list,
+        iter_sampling = iter_to_run - n_warmup,
+        iter_warmup = n_warmup,
+        chains = n_chains,
+        parallel_chains = n_chains,
+        adapt_delta = adapt_delta,
+        max_treedepth = max_treedepth,
+        refresh = ceiling(iter_to_run/10)
+      )
+      
+      # Extract step size and inverse metric after warmup
+      step_size <- fit$metadata()$step_size_adaptation
+      inv_metric <- fit$inv_metric()
+      warmup_done <- TRUE
+      
+      new_samples <- fit$draws()
+      current_iter <- iter_to_run
+    } else {
+      # Continue sampling post-warmup
+      last_draws <- accumulated_samples[[length(accumulated_samples)]]
+      last_draws <- last_draws[dim(last_draws)[1],,]  # Get the last iteration for all chains
+      init_list <- lapply(1:n_chains, function(chain_idx) create_init_list(last_draws, chain_idx))
+      
+      fit <- stanmodel_arg$sample(
+        data = data_list,
+        iter_sampling = remaining_iter,
+        iter_warmup = 0,
+        chains = n_chains,
+        parallel_chains = n_chains,
+        adapt_delta = adapt_delta,
+        metric='dense_e',
+        max_treedepth = max_treedepth,
+        init = init_list,
+        inv_metric = inv_metric,
+        adapt_engaged = FALSE,
+        step_size = step_size,
+        refresh = ceiling(remaining_iter/10)
+      )
+      
+      new_samples <- fit$draws()
+      current_iter <- current_iter + dim(new_samples)[1]
+    }
+    
+    # Accumulate new samples
+    accumulated_samples <- c(accumulated_samples, list(new_samples))
+    
+    # Extract and accumulate diagnostics
+    new_diagnostics <- fit$sampler_diagnostics()
+    accumulated_diagnostics <- c(accumulated_diagnostics, list(new_diagnostics))
+    
+    # Save checkpoint
+    saveRDS(list(current_iter = current_iter, 
+                 accumulated_samples = accumulated_samples,
+                 accumulated_diagnostics = accumulated_diagnostics,
+                 step_size = step_size, 
+                 inv_metric = inv_metric,
+                 warmup_done = warmup_done), 
+            file = checkpoint_file)
+    cat("Checkpoint saved at iteration", current_iter, "\n")
+  }
+  
+  # Combine all accumulated samples into a single draws object
+  all_samples <- do.call(posterior::bind_draws, c(accumulated_samples, along = "iteration"))
+  
+  # Combine all accumulated diagnostics
+  all_diagnostics <- do.call(posterior::bind_draws, c(accumulated_diagnostics, along = "iteration"))
+  
+  # Calculate diagnostic summaries
+  num_divergent <- colSums(all_diagnostics[, , "divergent__"])
+  num_max_treedepth <- colSums(all_diagnostics[, , "treedepth__"] == max_treedepth)
+  ebfmi <- sapply(1:n_chains, function(chain) {
+    energy <- all_diagnostics[, chain, "energy__"]
+    sum(diff(energy)^2) / (length(energy) - 1) / var(energy)
+  })
+  
+  # Calculate summary statistics based on all accumulated samples
+  summary_stats <- posterior::summarize_draws(all_samples)
+  
+  # Apply the function to each parameter
+  param_names <- dimnames(all_samples)[[3]]
+  diagnostics <- lapply(param_names, function(param) {
+    param_draws <- all_samples[, , param]
+    calculate_param_diagnostics(param_draws)
+  })
+  
+  # Combine the results into a data frame
+  diagnostics_df <- do.call(rbind, diagnostics)
+  rownames(diagnostics_df) <- param_names
+  
+  # Create a fit object with all necessary information
+  fit = list(
+    draws = all_samples,
+    sampler_diagnostics = all_diagnostics,
+    n_warmup = n_warmup,
+    n_iter = n_iter,
+    n_params = dim(all_samples)[3],
+    n_chains = n_chains,
+    adapt_delta = adapt_delta,
+    max_treedepth = max_treedepth,
+    tss = dim(all_samples)[1],
+    all_params = param_names,
+    list_params = unique(gsub("\\[.*?\\]", "", param_names)),
+    summary_stats = summary_stats,
+    diagnostic_summary = list(
+      num_divergent = num_divergent,
+      num_max_treedepth = num_max_treedepth,
+      ebfmi = ebfmi
+    ),
+    diagnostics = diagnostics_df,
+    cmdstan_version = cmdstan_version(),
+    model_name = model_str,
+    n_runs = length(accumulated_samples)  # Number of sampling runs
+  )
+  
+  # Print diagnostic warnings
+  total_iterations <- n_chains * (n_iter - n_warmup)
+  total_divergent <- sum(num_divergent)
+  total_max_treedepth <- sum(num_max_treedepth)
+  
+  if (total_divergent > 0) {
+    cat(sprintf("\nWarning: %d of %d (%.1f%%) transitions ended with a divergence.\n", 
+                total_divergent, total_iterations, 100 * total_divergent / total_iterations))
+    cat("See https://mc-stan.org/misc/warnings for details.\n")
+  }
+  
+  if (total_max_treedepth > 0) {
+    cat(sprintf("\nWarning: %d of %d (%.1f%%) transitions hit the maximum treedepth limit of %d.\n", 
+                total_max_treedepth, total_iterations, 100 * total_max_treedepth / total_iterations, max_treedepth))
+    cat("See https://mc-stan.org/misc/warnings for details.\n")
+  }
+  
+  cat("Extracting parameters\n")
+  fit$params <- extract_params(fit$all_params, n_subs, main_params_vec = model_params)
+  fit$params <- unname(fit$params)
+  
+  cat("Saving fitted model to:", output_file, "\n")
+  saveRDS(fit, file = output_file)
+  
+  # Remove checkpoint file after successful completion
+  if (file.exists(checkpoint_file) && file.exists(output_file)) {
+    file.remove(checkpoint_file)
+  }
+  
+  return(fit)
+}
+
 create_init_list = function(last_draws, chain_idx) {
   
   # Extract the last draw for this chain
@@ -40,6 +254,116 @@ create_init_list = function(last_draws, chain_idx) {
   }
   
   return(init_vals)
+}
+
+# Function to create balanced strata
+create_balanced_strata <- function(data, min_size = 10) {
+  data %>%
+    dplyr::group_by(grpid) %>%
+    dplyr::mutate(strata = dplyr::case_when(
+      dplyr::n() >= min_size ~ as.character(grpid),
+      TRUE ~ "Other"
+    )) %>%
+    dplyr::group_by(strata, grade10) %>%
+    dplyr::mutate(strata = paste(strata, grade10, sep = "")) %>%
+    dplyr::group_by(strata, male) %>%
+    dplyr::mutate(strata = paste(strata, male, sep = "")) %>%
+    dplyr::group_by(strata, race_ethnicity) %>%
+    dplyr::mutate(strata = paste(strata, race_ethnicity, sep = "")) %>%
+    dplyr::group_by(strata, parent_edu4) %>%
+    dplyr::mutate(strata = paste(strata, parent_edu4, sep = "")) %>%
+    dplyr::ungroup()
+}
+
+# Function to split data maintaining strata proportions
+stratified_split <- function(data, props) {
+  cumulative_prop <- cumsum(props)
+  
+  data %>%
+    dplyr::group_by(strata) %>%
+    dplyr::mutate(
+      random_number = runif(dplyr::n()),
+      split = cut(random_number, 
+                  breaks = c(0, cumulative_prop), 
+                  labels = seq_along(props),
+                  include.lowest = TRUE)
+    ) %>%
+    dplyr::select(-random_number) %>%
+    dplyr::ungroup()
+}
+
+# Diagnostics
+## Empirical Bayes diagnostics check
+check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 0.75, mcse_threshold = 0.1) {
+  # Check divergences
+  sampler_diagnostics <- fit$sampler_diagnostics
+  divergences <- sum(sampler_diagnostics[,,"divergent__"])
+  n_iter <- dim(sampler_diagnostics)[1]
+  n_chains <- dim(sampler_diagnostics)[2]
+  div_rate <- divergences / (n_iter * n_chains)
+  
+  if (div_rate > 0.01) {
+    cat("WARNING: Divergence rate is high (", div_rate * 100, "%)\n\n")
+  } else if (div_rate > 0.001) {
+    cat("CAUTION: Divergence rate is moderate (", div_rate * 100, "%)\n\n")
+  } else {
+    cat("Divergence rate is acceptable (", div_rate * 100, "%)\n\n")
+  }
+  
+  # Check normality of energy distribution
+  energy <- as.vector(sampler_diagnostics[,, "energy__"])
+  energy_normality <- shapiro.test(energy)
+  if (energy_normality$p.value < 0.05) {
+    cat("WARNING: Energy distribution may not be normal (p-value ", if (round(energy_normality$p.value, 4) == 0) "< 0.001" else round(energy_normality$p.value, 4), ")\n\n")
+  } else {
+    cat("Energy distribution appears to be normal (p-value =", round(energy_normality$p.value, 4), ")\n\n")
+  }
+  
+  # Check R-hat values
+  rhat_values <- fit$diagnostics[,'rhat']
+  max_rhat <- round(max(rhat_values, na.rm = TRUE), 4)
+  q90_rhat <- round(quantile(rhat_values, 0.9, na.rm = TRUE), 4)
+  
+  if (max_rhat / 1.1 > rhat_threshold || q90_rhat / 1.1 > rhat_threshold) {
+    cat("WARNING: R-hat values are high. \nMax R-hat/1.1 =", round(max_rhat/1.1, 4), "(", max_rhat, ")", ", \n90th percentile R-hat/1.1 =", round(q90_rhat/1.1, 4), "(", q90_rhat, ")", "\n\n")
+  } else {
+    cat("R-hat values are acceptable. \nMax R-hat/1.1 =", round(max_rhat/1.1, 4),  "(", max_rhat, ")", ",  \n90th percentile R-hat/1.1 =", round(q90_rhat/1.1, 4), "(", q90_rhat, ")",, "\n\n")
+  }
+  
+  # Check Effective Sample Size (ESS)
+  ess_bulk_values <- fit$diagnostics[,'ess_bulk']
+  n_eff <- ess_bulk_values / prod(dim(fit$draws)[1:2])
+  q10_neff <- round(quantile(n_eff, 0.1, na.rm = TRUE), 4)
+  
+  if (q10_neff < ess_threshold) {
+    cat("WARNING: Low effective sample size. 10th percentile n_eff =", q10_neff, "\n\n")
+    low_ess_params <- names(which(n_eff < ess_threshold))
+    cat("Parameters with n_eff <", ess_threshold, ":", paste(low_ess_params, collapse = ", "), "\n\n")
+  } else {
+    cat("Effective sample sizes are acceptable. 10th percentile n_eff =", q10_neff, "\n\n")
+  }
+  
+  # Check Monte Carlo Standard Error (MCSE)
+  draws_matrix <- posterior::as_draws_matrix(fit$draws)
+  mcse_values <- apply(draws_matrix, 2, posterior::mcse_mean)
+  posterior_sd <- apply(draws_matrix, 2, sd)
+  mcse_ratio <- mcse_values / posterior_sd
+  q10_mcse_ratio <- round(quantile(mcse_ratio, 0.9, na.rm = TRUE), 4)
+  
+  high_mcse_params <- names(which(mcse_ratio > mcse_threshold))
+  if (length(high_mcse_params) > 0) {
+    cat("WARNING: High MCSE. 90th percentile MCSE ration =", q10_mcse_ratio, "\n\n")
+    cat("Parameters with MCSE ratio >", mcse_threshold, ":", paste(high_mcse_params, collapse = ", "), "\n\n")
+  } else {
+    cat("MCSE values are acceptable for all parameters. 10th percentile ratio =", q10_mcse_ratio, "\n\n")
+  }
+  
+  # Return a list of problematic parameters
+  return(list(
+    high_rhat = names(which(rhat_values / 1.1 > rhat_threshold)),
+    low_ess = low_ess_params,
+    high_mcse = high_mcse_params
+  ))
 }
 
 # Function to calculate diagnostics for a single parameter
@@ -247,10 +571,10 @@ extract_sample_data <- function(data, data_params, n_trials = NULL, n_subs = NUL
   # Subset data based on n_trials and n_subs
   if (is_group) {
     data <- data %>%
-      group_by(sid) %>%
+      dplyr::group_by(sid) %>%
       filter(trial <= n_trials) %>%
       ungroup() %>%
-      group_by(sid) %>%
+      dplyr::group_by(sid) %>%
       filter(dplyr::n() == n_trials) %>%
       ungroup()
     
@@ -369,7 +693,7 @@ preprocess_data <- function(data, RTbound_ms, rt_method = "remove") {
   
   # Reset trial numbers
   data <- data %>%
-    group_by(sid) %>%
+    dplyr::group_by(sid) %>%
     dplyr::mutate(trial = row_number()) %>%
     ungroup()
   

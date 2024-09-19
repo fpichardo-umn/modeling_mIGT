@@ -7,3 +7,213 @@ Chain 1 Iteration:  100 / 6000 [  1%]  (Warmup)
 Chain 2 Iteration:  200 / 6000 [  3%]  (Warmup) 
 Chain 2 Iteration:  300 / 6000 [  5%]  (Warmup) 
 Chain 1 Iteration:  200 / 6000 [  3%]  (Warmup) 
+Chain 2 Iteration:  400 / 6000 [  6%]  (Warmup) 
+Chain 1 Iteration:  300 / 6000 [  5%]  (Warmup) 
+Chain 2 Iteration:  500 / 6000 [  8%]  (Warmup) 
+Chain 1 Iteration:  400 / 6000 [  6%]  (Warmup) 
+Chain 1 Iteration:  500 / 6000 [  8%]  (Warmup) 
+Chain 2 Iteration:  600 / 6000 [ 10%]  (Warmup) 
+Chain 1 Iteration:  600 / 6000 [ 10%]  (Warmup) 
+Chain 2 Iteration:  700 / 6000 [ 11%]  (Warmup) 
+Chain 1 Iteration:  700 / 6000 [ 11%]  (Warmup) 
+Chain 2 Iteration:  800 / 6000 [ 13%]  (Warmup) 
+Chain 1 Iteration:  800 / 6000 [ 13%]  (Warmup) 
+Chain 1 Iteration:  900 / 6000 [ 15%]  (Warmup) 
+Chain 2 Iteration:  900 / 6000 [ 15%]  (Warmup) 
+Chain 1 Iteration: 1000 / 6000 [ 16%]  (Warmup) 
+Chain 1 Iteration: 1001 / 6000 [ 16%]  (Sampling) 
+Chain 2 Iteration: 1000 / 6000 [ 16%]  (Warmup) 
+Chain 2 Iteration: 1001 / 6000 [ 16%]  (Sampling) 
+Chain 1 Iteration: 1100 / 6000 [ 18%]  (Sampling) 
+Chain 2 Iteration: 1100 / 6000 [ 18%]  (Sampling) 
+Chain 1 Iteration: 1200 / 6000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 1200 / 6000 [ 20%]  (Sampling) 
+Chain 1 Iteration: 1300 / 6000 [ 21%]  (Sampling) 
+Chain 2 Iteration: 1300 / 6000 [ 21%]  (Sampling) 
+Chain 1 Iteration: 1400 / 6000 [ 23%]  (Sampling) 
+Chain 2 Iteration: 1400 / 6000 [ 23%]  (Sampling) 
+Chain 1 Iteration: 1500 / 6000 [ 25%]  (Sampling) 
+Chain 1 Iteration: 1600 / 6000 [ 26%]  (Sampling) 
+Chain 2 Iteration: 1500 / 6000 [ 25%]  (Sampling) 
+Chain 1 Iteration: 1700 / 6000 [ 28%]  (Sampling) 
+Chain 2 Iteration: 1600 / 6000 [ 26%]  (Sampling) 
+Chain 1 Iteration: 1800 / 6000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 1700 / 6000 [ 28%]  (Sampling) 
+Chain 1 Iteration: 1900 / 6000 [ 31%]  (Sampling) 
+Chain 2 Iteration: 1800 / 6000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 2000 / 6000 [ 33%]  (Sampling) 
+Chain 2 Iteration: 1900 / 6000 [ 31%]  (Sampling) 
+Chain 1 Iteration: 2100 / 6000 [ 35%]  (Sampling) 
+Chain 2 Iteration: 2000 / 6000 [ 33%]  (Sampling) 
+Chain 1 Iteration: 2200 / 6000 [ 36%]  (Sampling) 
+Chain 2 Iteration: 2100 / 6000 [ 35%]  (Sampling) 
+Chain 1 Iteration: 2300 / 6000 [ 38%]  (Sampling) 
+Chain 2 Iteration: 2200 / 6000 [ 36%]  (Sampling) 
+Chain 1 Iteration: 2400 / 6000 [ 40%]  (Sampling) 
+Chain 2 Iteration: 2300 / 6000 [ 38%]  (Sampling) 
+Chain 1 Iteration: 2500 / 6000 [ 41%]  (Sampling) 
+Chain 2 Iteration: 2400 / 6000 [ 40%]  (Sampling) 
+Chain 1 Iteration: 2600 / 6000 [ 43%]  (Sampling) 
+Chain 2 Iteration: 2500 / 6000 [ 41%]  (Sampling) 
+Chain 1 Iteration: 2700 / 6000 [ 45%]  (Sampling) 
+Chain 2 Iteration: 2600 / 6000 [ 43%]  (Sampling) 
+Chain 1 Iteration: 2800 / 6000 [ 46%]  (Sampling) 
+Chain 2 Iteration: 2700 / 6000 [ 45%]  (Sampling) 
+Chain 1 Iteration: 2900 / 6000 [ 48%]  (Sampling) 
+Chain 2 Iteration: 2800 / 6000 [ 46%]  (Sampling) 
+Chain 1 Iteration: 3000 / 6000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 2900 / 6000 [ 48%]  (Sampling) 
+Chain 1 Iteration: 3100 / 6000 [ 51%]  (Sampling) 
+Chain 2 Iteration: 3000 / 6000 [ 50%]  (Sampling) 
+Chain 1 Iteration: 3200 / 6000 [ 53%]  (Sampling) 
+Chain 2 Iteration: 3100 / 6000 [ 51%]  (Sampling) 
+Chain 1 Iteration: 3300 / 6000 [ 55%]  (Sampling) 
+Chain 1 Iteration: 3400 / 6000 [ 56%]  (Sampling) 
+Chain 2 Iteration: 3200 / 6000 [ 53%]  (Sampling) 
+Chain 1 Iteration: 3500 / 6000 [ 58%]  (Sampling) 
+Chain 2 Iteration: 3300 / 6000 [ 55%]  (Sampling) 
+Chain 1 Iteration: 3600 / 6000 [ 60%]  (Sampling) 
+Chain 2 Iteration: 3400 / 6000 [ 56%]  (Sampling) 
+Chain 1 Iteration: 3700 / 6000 [ 61%]  (Sampling) 
+Chain 2 Iteration: 3500 / 6000 [ 58%]  (Sampling) 
+Chain 1 Iteration: 3800 / 6000 [ 63%]  (Sampling) 
+Chain 2 Iteration: 3600 / 6000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 3900 / 6000 [ 65%]  (Sampling) 
+Chain 2 Iteration: 3700 / 6000 [ 61%]  (Sampling) 
+Chain 1 Iteration: 4000 / 6000 [ 66%]  (Sampling) 
+Chain 2 Iteration: 3800 / 6000 [ 63%]  (Sampling) 
+Chain 1 Iteration: 4100 / 6000 [ 68%]  (Sampling) 
+Chain 2 Iteration: 3900 / 6000 [ 65%]  (Sampling) 
+Chain 1 Iteration: 4200 / 6000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 4000 / 6000 [ 66%]  (Sampling) 
+Chain 1 Iteration: 4300 / 6000 [ 71%]  (Sampling) 
+Chain 2 Iteration: 4100 / 6000 [ 68%]  (Sampling) 
+Chain 1 Iteration: 4400 / 6000 [ 73%]  (Sampling) 
+Chain 2 Iteration: 4200 / 6000 [ 70%]  (Sampling) 
+Chain 1 Iteration: 4500 / 6000 [ 75%]  (Sampling) 
+Chain 2 Iteration: 4300 / 6000 [ 71%]  (Sampling) 
+Chain 1 Iteration: 4600 / 6000 [ 76%]  (Sampling) 
+Chain 2 Iteration: 4400 / 6000 [ 73%]  (Sampling) 
+Chain 1 Iteration: 4700 / 6000 [ 78%]  (Sampling) 
+Chain 2 Iteration: 4500 / 6000 [ 75%]  (Sampling) 
+Chain 1 Iteration: 4800 / 6000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 4600 / 6000 [ 76%]  (Sampling) 
+Chain 1 Iteration: 4900 / 6000 [ 81%]  (Sampling) 
+Chain 2 Iteration: 4700 / 6000 [ 78%]  (Sampling) 
+Chain 1 Iteration: 5000 / 6000 [ 83%]  (Sampling) 
+Chain 2 Iteration: 4800 / 6000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 5100 / 6000 [ 85%]  (Sampling) 
+Chain 2 Iteration: 4900 / 6000 [ 81%]  (Sampling) 
+Chain 1 Iteration: 5200 / 6000 [ 86%]  (Sampling) 
+Chain 2 Iteration: 5000 / 6000 [ 83%]  (Sampling) 
+Chain 2 Iteration: 5100 / 6000 [ 85%]  (Sampling) 
+Chain 1 Iteration: 5300 / 6000 [ 88%]  (Sampling) 
+Chain 2 Iteration: 5200 / 6000 [ 86%]  (Sampling) 
+Chain 1 Iteration: 5400 / 6000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 5300 / 6000 [ 88%]  (Sampling) 
+Chain 1 Iteration: 5500 / 6000 [ 91%]  (Sampling) 
+Chain 2 Iteration: 5400 / 6000 [ 90%]  (Sampling) 
+Chain 1 Iteration: 5600 / 6000 [ 93%]  (Sampling) 
+Chain 2 Iteration: 5500 / 6000 [ 91%]  (Sampling) 
+Chain 1 Iteration: 5700 / 6000 [ 95%]  (Sampling) 
+Chain 2 Iteration: 5600 / 6000 [ 93%]  (Sampling) 
+Chain 1 Iteration: 5800 / 6000 [ 96%]  (Sampling) 
+Chain 2 Iteration: 5700 / 6000 [ 95%]  (Sampling) 
+Chain 1 Iteration: 5900 / 6000 [ 98%]  (Sampling) 
+Chain 2 Iteration: 5800 / 6000 [ 96%]  (Sampling) 
+Chain 1 Iteration: 6000 / 6000 [100%]  (Sampling) 
+Chain 1 finished in 7213.4 seconds.
+Chain 2 Iteration: 5900 / 6000 [ 98%]  (Sampling) 
+Chain 2 Iteration: 6000 / 6000 [100%]  (Sampling) 
+Chain 2 finished in 7421.8 seconds.
+
+Both chains finished successfully.
+Mean chain execution time: 7317.6 seconds.
+Total execution time: 7422.0 seconds.
+
+
+Summary of extracted individual parameters:
+
+    con  update wgt_pun wgt_rew 
+    200     200     200     200 
+Group-level recovery metrics:
+# A tibble: 1 × 5
+  correlation  rmse   mae   bias relative_bias
+        <dbl> <dbl> <dbl>  <dbl>         <dbl>
+1       0.947 0.438 0.369 0.0539          10.2
+
+Individual-level recovery metrics:
+Overall:
+# A tibble: 1 × 5
+  correlation  rmse   mae   bias relative_bias
+        <dbl> <dbl> <dbl>  <dbl>         <dbl>
+1       0.948 0.422 0.359 0.0599          10.2
+
+Across individuals:
+# A tibble: 4 × 6
+  parameter correlation  rmse   mae   bias relative_bias
+  <chr>           <dbl> <dbl> <dbl>  <dbl>         <dbl>
+1 con             0.166 0.598 0.598 -0.598          1.54
+2 update         -0.183 0.561 0.561  0.561         14.2 
+3 wgt_pun         0.231 0.171 0.171  0.171         23.8 
+4 wgt_rew         0.125 0.105 0.105  0.105          1.40
+
+Within individuals:
+# A tibble: 4 × 6
+  parameter correlation  rmse   mae   bias relative_bias
+  <chr>           <dbl> <dbl> <dbl>  <dbl>         <dbl>
+1 con             0.166 0.598 0.598 -0.598          1.54
+2 update         -0.183 0.561 0.561  0.561         14.2 
+3 wgt_pun         0.231 0.171 0.171  0.171         23.8 
+4 wgt_rew         0.125 0.105 0.105  0.105          1.40
+$corr
+       con     update wgt_pun   wgt_rew
+1 0.717145 -0.7936811       1 0.5395101
+
+$corrPos
+    xName yName x y       corr
+1     con     1 1 1  0.7171450
+2  update     1 2 1 -0.7936811
+3 wgt_pun     1 3 1  1.0000000
+4 wgt_rew     1 4 1  0.5395101
+
+$arg
+$arg$type
+[1] "full"
+
+
+pdf 
+  2 
+$corr
+         16        43        66        78       81        97
+1 0.9460546 0.9491485 0.9462538 0.9502189 0.945344 0.9493805
+
+$corrPos
+  xName yName x y      corr
+1    43     1 2 1 0.9491485
+2    66     1 3 1 0.9462538
+3    78     1 4 1 0.9502189
+4    81     1 5 1 0.9453440
+5    97     1 6 1 0.9493805
+
+$arg
+$arg$type
+[1] "upper"
+
+
+pdf 
+  2 
+
+Parameter Correlations:
+# A tibble: 4 × 2
+  parameter correlation
+  <chr>           <dbl>
+1 con             0.166
+2 update         -0.183
+3 wgt_pun         0.231
+4 wgt_rew         0.125
+
+Individual Correlations Summary:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.9427  0.9466  0.9478  0.9479  0.9492  0.9513 
+Parameter recovery analysis completed for 100 subjects.

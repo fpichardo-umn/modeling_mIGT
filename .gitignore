@@ -1,5 +1,7 @@
 /Data/AHRB/*
 /Data/rds/*
+/Data/txt/subs/*
+/Data/sim/rds/*
 /models/rds/*
 /models/bin/*
 .DS_Store
