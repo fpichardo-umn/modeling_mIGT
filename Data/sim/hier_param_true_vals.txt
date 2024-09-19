@@ -1,0 +1,15 @@
+Means for con wgt_pun wgt_rew update 
+-0.372631 -4.127855 -2.245165 -2.642675 
+ 
+Sigmas for con wgt_pun wgt_rew update 
+0.05779375 0.192399 0.117212 0.206485 
+Hierarchical Posterior Sampling EPSE simulated parameters saved to /Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/sim/igt_mod_group_hier_ev_desc-sim_params_hpsEPSE.rds 
+
+
+Means for con wgt_pun wgt_rew update 
+-0.332549 -4.15158 -2.23811 -2.60038 
+ 
+Sigmas for con wgt_pun wgt_rew update 
+0.0588806 0.194928 0.128326 0.218967 
+Tuple Hierarchical Posterior Sampling EPSE simulated parameters saved to /Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/sim/igt_mod_group_hier_ev_desc-sim_params_thpsEPSE.rds 
+All parameters generated. Values saved to /Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/sim 

@@ -1,0 +1,303 @@
+---
+title: "Untitled"
+author: "Felix Pichardo"
+date: "2024-09-18"
+output: html_document
+---
+
+```{r}
+suppressPackageStartupMessages({
+  library(here)
+  library(foreign)
+  library(dplyr) #for %>%
+  library(tidyr)
+  library(plyr)   #for revalue
+  library(ggplot2)
+  library(gridExtra)
+  library(grid)   #for textGrob
+  library(kableExtra) #for knitr tables
+  library(caret)
+  library(MplusAutomation)
+  library(tidyverse)
+  library(psych)
+  library(car)
+  library(corrplot)
+  library(lme4)
+  library(lmerTest)  # For p-values in mixed models
+})
+
+# Directories
+PROJ_DIR            = file.path(here::here())
+DATA_DIR            = file.path(PROJ_DIR, "Data")
+SAFE_DATA_DIR       = file.path(DATA_DIR, "AHRB")
+MODELS_DIR          = file.path(PROJ_DIR, "models")
+MODELS_RDS_DIR      = file.path(MODELS_DIR, "rds")
+MODELS_RDS_FIT_DIR  = file.path(MODELS_RDS_DIR, "fit")
+MODELS_RDS_PoPC_DIR = file.path(MODELS_RDS_DIR, "postpc")
+
+# Source helper functions
+source(file.path(PROJ_DIR, "scripts", "helper_functions_cmdSR.R"))
+
+# Load Data
+## Trial-level data
+wave1.sav.file = file.path(SAFE_DATA_DIR, "modigt_data_Wave1.sav")
+wave1.raw      = read.spss(wave1.sav.file,to.data.frame = TRUE)
+
+efa.sample.file = file.path(SAFE_DATA_DIR, "efa_sample.csv")
+efa.sample.data = read.csv(efa.sample.file)
+
+
+## Risk factor data
+factor.file = file.path(DATA_DIR, "factor_scores.csv")
+factor.data = read.table(factor.file, header = FALSE, sep = "", stringsAsFactors = FALSE)
+
+
+variable_names = c("BISB", "BSSS_ES", "BSSS_BS", "BSSS_TS", "BSSS_SD", 
+                    "ATTNPROB", "MAGGR", "MCONDUCT", "EXT_F", "EXT_F_SE",
+                   "SID", "GRPID")
+
+names(factor.data) = variable_names
+```
+
+
+##Hier Group
+```{r}
+model_str = "igt_mod_group_hier_ev"
+
+group.hier.ev.model.fit.path = file.path(MODELS_RDS_FIT_DIR, paste0(model_str, "_fit.rds"))
+rds_pathname  = group.hier.ev.model.fit.path
+
+sample_df = wave1.raw
+```
+
+```{r}
+data_to_extract = c("N", "T", "Tsubj", "choice", "shown", "outcome")
+params = c("con", "wgt_pun", "wgt_rew", "update")
+
+data_list <- extract_sample_data(wave1.raw, data_to_extract, 
+                                   n_subs = 1000, n_trials = 120, 
+                                   RTbound_ms = 50,
+                                   RTbound_reject_ms = 100, 
+                                   rt_method = "remove", minrt_ep_ms = 0)
+```
+
+
+### Load fit
+```{r}
+fit_output_file = sub('/models/', '/Data/', paste0(tools::file_path_sans_ext(rds_pathname), "_output.rds"))
+
+model_fit_obj = readRDS(file = fit_output_file)
+```
+
+## Extract parameters
+```{r}
+# Create a data frame to store the parameters
+param_df <- data.frame(
+  SID = factor.data$SID,
+  con = numeric(nrow(factor.data)),
+  wgt_pun = numeric(nrow(factor.data)),
+  wgt_rew = numeric(nrow(factor.data)),
+  update = numeric(nrow(factor.data))
+)
+
+# Extract parameters for each subject
+for (i in 1:nrow(factor.data)) {
+  sid_idx <- which(model_fit_obj$sid == factor.data$SID[i])
+  if (length(sid_idx) > 0) {
+    param_df$con[i] <- model_fit_obj$summary_stats$mean[which(model_fit_obj$all_params == paste0("con[", sid_idx, "]"))]
+    param_df$wgt_pun[i] <- model_fit_obj$summary_stats$mean[which(model_fit_obj$all_params == paste0("wgt_pun[", sid_idx, "]"))]
+    param_df$wgt_rew[i] <- model_fit_obj$summary_stats$mean[which(model_fit_obj$all_params == paste0("wgt_rew[", sid_idx, "]"))]
+    param_df$update[i] <- model_fit_obj$summary_stats$mean[which(model_fit_obj$all_params == paste0("update[", sid_idx, "]"))]
+  }
+}
+
+merged_df <- merge(param_df, factor.data, by = "SID")
+
+# EFA
+efa_subset <- efa.sample.data[, c("sid", "bsss8", "male", "race_ethnicity", "grade10", "parent_edu6")]
+
+efa_subset$SID = efa_subset$sid
+efa_subset$sid = NULL
+
+final_df <- merge(merged_df, efa_subset, by = "SID")
+```
+
+
+```{r}
+relevant_data = final_df[, c("con", "wgt_pun", "wgt_rew", "update",
+                                  "EXT_F",
+                                  "BISB", "BSSS_ES", "BSSS_BS",
+                                  "BSSS_TS", "BSSS_SD",
+                                  "ATTNPROB", "MAGGR", "MCONDUCT", 
+                                  "bsss8")]
+```
+
+```{r}
+fa.corr = cor(relevant_data)
+diag(fa.corr) = 0
+corrplot::corrplot(fa.corr)
+```
+
+
+```{r}
+lm_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), function(param) {
+  formula <- as.formula(paste("EXT_F ~", param))
+  lm(formula, data = final_df)
+})
+
+# Print summaries
+lapply(lm_results, summary)
+```
+
+```{r}
+lm_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), function(param) {
+  formula <- as.formula(paste("BSSS_SD ~", param))
+  lm(formula, data = final_df)
+})
+
+# Print summaries
+lapply(lm_results, summary)
+```
+
+
+```{r}
+lm_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), function(param) {
+  formula <- as.formula(paste("MCONDUCT ~", param))
+  lm(formula, data = final_df)
+})
+
+# Print summaries
+lapply(lm_results, summary)
+```
+
+```{r}
+# Function to run lmer for each parameter
+run_lmer <- function(param) {
+  formula <- as.formula(paste("BSSS_SD ~", param, "+ (1|GRPID)"))
+  model <- lmer(formula, data = final_df)
+  return(summary(model))
+}
+
+# Run models for each parameter
+lmer_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), run_lmer)
+
+# Print results
+print(lmer_results)
+```
+
+
+```{r}
+# Function to run lmer for each parameter
+run_lmer <- function(param) {
+  formula <- as.formula(paste("MCONDUCT ~", param, "+ (1|GRPID)"))
+  model <- lmer(formula, data = final_df)
+  return(summary(model))
+}
+
+# Run models for each parameter
+lmer_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), run_lmer)
+
+# Print results
+print(lmer_results)
+```
+
+
+
+```{r}
+# Function to run lmer for each parameter
+run_lmer <- function(param) {
+  formula <- as.formula(paste("BSSS_SD ~", param, "*male + (1|GRPID)"))
+  model <- lmer(formula, data = final_df)
+  return(summary(model))
+}
+
+# Run models for each parameter
+lmer_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), run_lmer)
+
+# Print results
+print(lmer_results)
+```
+
+
+
+```{r}
+# Function to run lmer for each parameter
+run_lmer <- function(param) {
+  formula <- as.formula(paste("BSSS_SD ~", param, "*grade10 + (1|GRPID)"))
+  model <- lmer(formula, data = final_df)
+  return(summary(model))
+}
+
+# Run models for each parameter
+lmer_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), run_lmer)
+
+# Print results
+print(lmer_results)
+```
+
+
+
+```{r}
+# Function to run lmer for each parameter
+run_lmer <- function(param) {
+  formula <- as.formula(paste("BSSS_SD ~", param, " + race_ethnicity + (1|GRPID)"))
+  model <- lmer(formula, data = final_df)
+  return(summary(model))
+}
+
+# Run models for each parameter
+lmer_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), run_lmer)
+
+# Print results
+print(lmer_results)
+```
+
+
+
+```{r}
+# Function to run lmer for each parameter
+run_lmer <- function(param) {
+  formula <- as.formula(paste("BSSS_SD ~", param, " + parent_edu6 + (1|GRPID)"))
+  model <- lmer(formula, data = final_df)
+  return(summary(model))
+}
+
+# Run models for each parameter
+lmer_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), run_lmer)
+
+# Print results
+print(lmer_results)
+```
+
+# Controls
+```{r}
+final_df$race_ethnicity_ANH = as.numeric(final_df$race_ethnicity == "asian non hispanic")
+
+# Function to run lmer for each parameter
+run_lmer <- function(param) {
+  formula <- as.formula(paste("BSSS_SD ~", param, "*male + race_ethnicity_ANH + (1|GRPID)"))
+  model <- lmer(formula, data = final_df)
+  return(summary(model))
+}
+
+# Run models for each parameter
+lmer_results <- lapply(c("con", "wgt_pun", "wgt_rew", "update"), run_lmer)
+
+# Print results
+print(lmer_results)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

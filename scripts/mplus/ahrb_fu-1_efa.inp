@@ -1,0 +1,26 @@
+TITLE: EFA with clustering for grpid
+DATA: 
+FILE =
+"/Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/ahrb_fu-1_desc-ext.dat";
+VARIABLE: 
+NAMES = sid grpid
+	race_ethnicity male age grade10 parent_edu4
+	bisb bsss8 bsss_es bsss_bs bsss_ts bsss_sd
+	social attnprob maggr anx mconduct; 
+MISSING=.;
+
+USEVARIABLES ARE bisb bsss8 bsss_es bsss_bs bsss_ts bsss_sd 
+                 attnprob maggr mconduct;
+
+CLUSTER IS grpid;
+
+ANALYSIS:
+TYPE = COMPLEX EFA 1 3;
+ROTATION = GEOMIN;
+ESTIMATOR = MLR;
+ITERATIONS = 50000;
+CONVERGENCE = 0.00005;
+
+OUTPUT: 
+STDYX;
+MODINDICES;

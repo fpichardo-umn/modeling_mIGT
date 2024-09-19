@@ -1,0 +1,363 @@
+Mplus VERSION 8.8 (Mac)
+MUTHEN & MUTHEN
+09/17/2024  10:44 PM
+
+INPUT INSTRUCTIONS
+
+  TITLE: CFA based on 3-factor EFA results with standardized data
+
+  DATA:
+  FILE =
+  "/Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/ahrb_fu-1_desc-ext.da
+
+  VARIABLE:
+  NAMES ARE sid grpid
+  	race_ethnicity male age grade10 parent_edu4
+  	bisb bsss8 bsss_es bsss_bs bsss_ts bsss_sd
+  	social attnprob maggr anx mconduct;
+  	
+  USEVARIABLES ARE bisb bsss_es bsss_bs bsss_ts bsss_sd
+                   attnprob maggr mconduct;
+
+  CLUSTER IS grpid;
+
+  ANALYSIS:
+  TYPE = COMPLEX;
+  ESTIMATOR = MLR;
+  ITERATIONS = 100000;
+  CONVERGENCE = 0.00005;
+
+  MODEL:
+  ! Factor 1: Sensation Seeking
+  F1 BY bsss_es bsss_bs bsss_ts bsss_sd;
+
+  ! Factor 2: Attention Problems/Impulsivity
+  F2 BY bisb attnprob;
+
+  ! Factor 3: Conduct Problems
+  F3 BY mconduct maggr bsss_sd;
+
+  ! Factor correlations
+  F1 WITH F2 F3;
+  F2 WITH F3;
+
+  ! Shared errors
+  ATTNPROB WITH BSSS_SD;
+  MCONDUCT WITH ATTNPROB;
+
+  OUTPUT:
+  STDYX;
+  MODINDICES;
+
+
+
+*** WARNING
+  Input line exceeded 90 characters. Some input may be truncated.
+  "/Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/ahrb_fu-1_desc-ext.dat
+*** WARNING in DATA command
+  Statement not terminated by a semicolon:
+  FILE = "/Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/ahrb_fu-1_desc-ext.dat
+*** WARNING in DATA command
+  Mismatched quotation in FILE option.  A quotation mark will be assumed at
+  the end of the line.
+   3 WARNING(S) FOUND IN THE INPUT INSTRUCTIONS
+
+
+
+CFA based on 3-factor EFA results with standardized data
+
+SUMMARY OF ANALYSIS
+
+Number of groups                                                 1
+Number of observations                                         274
+
+Number of dependent variables                                    8
+Number of independent variables                                  0
+Number of continuous latent variables                            3
+
+Observed dependent variables
+
+  Continuous
+   BISB        BSSS_ES     BSSS_BS     BSSS_TS     BSSS_SD     ATTNPROB
+   MAGGR       MCONDUCT
+
+Continuous latent variables
+   F1          F2          F3
+
+Variables with special functions
+
+  Cluster variable      GRPID
+
+Estimator                                                      MLR
+Information matrix                                        OBSERVED
+Maximum number of iterations                                100000
+Convergence criterion                                    0.500D-04
+Maximum number of steepest descent iterations                   20
+
+Input data file(s)
+  /Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/ahrb_fu-1_
+
+Input data format  FREE
+
+
+SUMMARY OF DATA
+
+     Number of clusters                         76
+
+
+
+
+UNIVARIATE SAMPLE STATISTICS
+
+
+     UNIVARIATE HIGHER-ORDER MOMENT DESCRIPTIVE STATISTICS
+
+         Variable/         Mean/     Skewness/   Minimum/ % with                Percentiles
+        Sample Size      Variance    Kurtosis    Maximum  Min/Max      20%/60%    40%/80%    Median
+
+     BISB                  0.000       0.579      -1.968    1.09%      -0.940     -0.425     -0.168
+             274.000       0.996      -0.096       3.433    0.36%       0.089      0.861
+     BSSS_ES               0.000      -0.458      -2.359    3.65%      -0.915     -0.434      0.047
+             274.000       0.996      -0.480       1.491   10.58%       0.529      1.010
+     BSSS_BS               0.000      -0.196      -2.801    1.09%      -0.914     -0.285     -0.285
+             274.000       0.996      -0.148       2.232    1.82%       0.344      0.973
+     BSSS_TS               0.000      -0.591      -2.313    5.84%      -0.962      0.075      0.075
+             274.000       0.996      -0.215       1.719    2.55%       0.528      0.949
+     BSSS_SD               0.000      -0.197      -1.991    6.57%      -0.687     -0.161     -0.161
+             274.000       0.996      -0.717       1.902    2.92%       0.314      0.752
+     ATTNPROB              0.000       0.526      -1.472    6.20%      -0.874     -0.575      0.023
+             274.000       0.996      -0.389       2.713    1.09%       0.322      0.920
+     MAGGR                 0.000      -0.188      -1.941    9.85%      -0.959     -0.240      0.023
+             274.000       0.996      -0.368       2.768    0.36%       0.254      0.836
+     MCONDUCT              0.000      -0.103      -1.962    8.76%      -0.864     -0.222     -0.222
+             274.000       0.996      -0.376       2.430    0.73%       0.234      0.876
+
+
+THE MODEL ESTIMATION TERMINATED NORMALLY
+
+
+
+MODEL FIT INFORMATION
+
+Number of Free Parameters                       30
+
+Loglikelihood
+
+          H0 Value                       -2740.534
+          H0 Scaling Correction Factor      0.9729
+            for MLR
+          H1 Value                       -2724.985
+          H1 Scaling Correction Factor      1.0116
+            for MLR
+
+Information Criteria
+
+          Akaike (AIC)                    5541.067
+          Bayesian (BIC)                  5649.461
+          Sample-Size Adjusted BIC        5554.338
+            (n* = (n + 2) / 24)
+
+Chi-Square Test of Model Fit
+
+          Value                             28.407*
+          Degrees of Freedom                    14
+          P-Value                           0.0126
+          Scaling Correction Factor         1.0947
+            for MLR
+
+*   The chi-square value for MLM, MLMV, MLR, ULSMV, WLSM and WLSMV cannot be used
+    for chi-square difference testing in the regular way.  MLM, MLR and WLSM
+    chi-square difference testing is described on the Mplus website.  MLMV, WLSMV,
+    and ULSMV difference testing is done using the DIFFTEST option.
+
+RMSEA (Root Mean Square Error Of Approximation)
+
+          Estimate                           0.061
+          90 Percent C.I.                    0.028  0.094
+          Probability RMSEA <= .05           0.254
+
+CFI/TLI
+
+          CFI                                0.979
+          TLI                                0.958
+
+Chi-Square Test of Model Fit for the Baseline Model
+
+          Value                            717.920
+          Degrees of Freedom                    28
+          P-Value                           0.0000
+
+SRMR (Standardized Root Mean Square Residual)
+
+          Value                              0.038
+
+
+
+MODEL RESULTS
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ F1       BY
+    BSSS_ES            1.000      0.000    999.000    999.000
+    BSSS_BS            0.724      0.085      8.529      0.000
+    BSSS_TS            0.789      0.073     10.739      0.000
+    BSSS_SD            0.526      0.089      5.885      0.000
+
+ F2       BY
+    BISB               1.000      0.000    999.000    999.000
+    ATTNPROB           1.193      0.130      9.188      0.000
+
+ F3       BY
+    MCONDUCT           1.000      0.000    999.000    999.000
+    MAGGR              0.846      0.079     10.774      0.000
+    BSSS_SD            0.311      0.061      5.098      0.000
+
+ F1       WITH
+    F2                 0.266      0.053      4.985      0.000
+    F3                 0.269      0.059      4.582      0.000
+
+ F2       WITH
+    F3                 0.506      0.073      6.973      0.000
+
+ ATTNPROB WITH
+    BSSS_SD           -0.203      0.038     -5.317      0.000
+    MCONDUCT          -0.101      0.045     -2.269      0.023
+
+ Intercepts
+    BISB               0.000      0.064      0.000      1.000
+    BSSS_ES            0.000      0.062      0.000      1.000
+    BSSS_BS            0.000      0.056      0.000      1.000
+    BSSS_TS            0.000      0.060      0.000      1.000
+    BSSS_SD            0.000      0.064      0.000      1.000
+    ATTNPROB           0.000      0.065      0.000      1.000
+    MAGGR              0.000      0.066      0.000      1.000
+    MCONDUCT           0.000      0.054      0.000      1.000
+
+ Variances
+    F1                 0.649      0.082      7.902      0.000
+    F2                 0.494      0.100      4.940      0.000
+    F3                 0.797      0.105      7.566      0.000
+
+ Residual Variances
+    BISB               0.502      0.058      8.619      0.000
+    BSSS_ES            0.348      0.072      4.842      0.000
+    BSSS_BS            0.656      0.058     11.366      0.000
+    BSSS_TS            0.592      0.080      7.400      0.000
+    BSSS_SD            0.644      0.056     11.557      0.000
+    ATTNPROB           0.286      0.062      4.602      0.000
+    MAGGR              0.426      0.055      7.691      0.000
+    MCONDUCT           0.202      0.066      3.046      0.002
+
+
+QUALITY OF NUMERICAL RESULTS
+
+     Condition Number for the Information Matrix              0.117E-01
+       (ratio of smallest to largest eigenvalue)
+
+
+STANDARDIZED MODEL RESULTS
+
+
+STDYX Standardization
+
+                                                    Two-Tailed
+                    Estimate       S.E.  Est./S.E.    P-Value
+
+ F1       BY
+    BSSS_ES            0.807      0.043     18.620      0.000
+    BSSS_BS            0.584      0.049     11.874      0.000
+    BSSS_TS            0.637      0.055     11.623      0.000
+    BSSS_SD            0.426      0.062      6.824      0.000
+
+ F2       BY
+    BISB               0.704      0.048     14.786      0.000
+    ATTNPROB           0.843      0.038     22.477      0.000
+
+ F3       BY
+    MCONDUCT           0.893      0.038     23.603      0.000
+    MAGGR              0.757      0.036     20.770      0.000
+    BSSS_SD            0.279      0.060      4.681      0.000
+
+ F1       WITH
+    F2                 0.470      0.063      7.447      0.000
+    F3                 0.374      0.073      5.125      0.000
+
+ F2       WITH
+    F3                 0.807      0.047     17.323      0.000
+
+ ATTNPROB WITH
+    BSSS_SD           -0.474      0.104     -4.561      0.000
+    MCONDUCT          -0.421      0.252     -1.672      0.094
+
+ Intercepts
+    BISB               0.000      0.064      0.000      1.000
+    BSSS_ES            0.000      0.063      0.000      1.000
+    BSSS_BS            0.000      0.056      0.000      1.000
+    BSSS_TS            0.000      0.060      0.000      1.000
+    BSSS_SD            0.000      0.064      0.000      1.000
+    ATTNPROB           0.000      0.065      0.000      1.000
+    MAGGR              0.000      0.067      0.000      1.000
+    MCONDUCT           0.000      0.054      0.000      1.000
+
+ Variances
+    F1                 1.000      0.000    999.000    999.000
+    F2                 1.000      0.000    999.000    999.000
+    F3                 1.000      0.000    999.000    999.000
+
+ Residual Variances
+    BISB               0.504      0.067      7.521      0.000
+    BSSS_ES            0.349      0.070      4.987      0.000
+    BSSS_BS            0.659      0.058     11.450      0.000
+    BSSS_TS            0.594      0.070      8.516      0.000
+    BSSS_SD            0.652      0.057     11.451      0.000
+    ATTNPROB           0.289      0.063      4.572      0.000
+    MAGGR              0.427      0.055      7.741      0.000
+    MCONDUCT           0.202      0.068      2.995      0.003
+
+
+R-SQUARE
+
+    Observed                                        Two-Tailed
+    Variable        Estimate       S.E.  Est./S.E.    P-Value
+
+    BISB               0.496      0.067      7.393      0.000
+    BSSS_ES            0.651      0.070      9.310      0.000
+    BSSS_BS            0.341      0.058      5.937      0.000
+    BSSS_TS            0.406      0.070      5.811      0.000
+    BSSS_SD            0.348      0.057      6.117      0.000
+    ATTNPROB           0.711      0.063     11.239      0.000
+    MAGGR              0.573      0.055     10.385      0.000
+    MCONDUCT           0.798      0.068     11.801      0.000
+
+
+MODEL MODIFICATION INDICES
+
+NOTE:  Modification indices for direct effects of observed dependent variables
+regressed on covariates may not be included.  To include these, request
+MODINDICES (ALL).
+
+Minimum M.I. value for printing the modification index    10.000
+
+                                   M.I.     E.P.C.  Std E.P.C.  StdYX E.P.C.
+
+No modification indices above the minimum value.
+
+
+
+     Beginning Time:  22:44:06
+        Ending Time:  22:44:06
+       Elapsed Time:  00:00:00
+
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2022 Muthen & Muthen

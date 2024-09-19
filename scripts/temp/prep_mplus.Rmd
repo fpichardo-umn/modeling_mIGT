@@ -1,0 +1,275 @@
+---
+title: "Untitled"
+author: "Felix Pichardo"
+date: "2024-09-18"
+output: html_document
+---
+
+```{r}
+suppressPackageStartupMessages({
+  library(here)
+  library(foreign)
+  library(dplyr) #for %>%
+  library(tidyr)
+  library(plyr)   #for revalue
+  library(ggplot2)
+  library(gridExtra)
+  library(grid)   #for textGrob
+  library(kableExtra) #for knitr tables
+  library(caret)
+  library(MplusAutomation)
+  library(tidyverse)
+  library(psych)
+  library(car)
+  library(corrplot)
+})
+
+# Directories
+PROJ_DIR            = file.path(here::here())
+DATA_DIR            = file.path(PROJ_DIR, "Data")
+SAFE_DATA_DIR       = file.path(DATA_DIR, "AHRB")
+MODELS_DIR          = file.path(PROJ_DIR, "models")
+MODELS_RDS_DIR      = file.path(MODELS_DIR, "rds")
+MODELS_RDS_FIT_DIR  = file.path(MODELS_RDS_DIR, "fit")
+MODELS_RDS_PoPC_DIR = file.path(MODELS_RDS_DIR, "postpc")
+
+
+# Load Data
+## Trial-level data
+efa.sample.file = file.path(SAFE_DATA_DIR, "efa_sample.csv")
+
+efa.sample.data   = read.csv(efa.sample.file)
+
+# Variable names
+# variable_names = c("sid", "grpid",
+#   "race_ethnicity", "male", "age", "grade10", "parent_edu4", 
+#   "bisb", "bsss8", "bsss_es", "bsss_bs","bsss_ts", "bsss_sd",
+#   "ysr_external", "ysr_anxdep", "ysr_social",
+#   "ysr_attentionproblems", "ysr_rulebreak", "ysr_mrulebreak", 
+#   "ysr_aggressive", "ysr_maggressive",
+#   "ysr_anxiety", "ysr_adhd", "ysr_odd", "ysr_conduct", "ysr_mconduct",
+#   "ysr_external_t", "ysr_social_t", "ysr_attentionproblems_t",
+#   "ysr_rulebreak_t", "ysr_mrulebreak_t",
+#   "ysr_aggressive_t", "ysr_maggressive_t", 
+#   "ysr_anxiety_t", "ysr_adhd_t", "ysr_odd_t",
+#   "ysr_conduct_t", "ysr_mconduct_t")
+# 
+# indicator_names = c(
+#   "bisb", "bsss8", "bsss_es", "bsss_bs","bsss_ts", "bsss_sd",
+#   "ysr_external", "ysr_anxdep", "ysr_social",
+#   "ysr_attentionproblems", "ysr_rulebreak", "ysr_mrulebreak", 
+#   "ysr_aggressive", "ysr_maggressive",
+#   "ysr_anxiety", "ysr_adhd", "ysr_odd", "ysr_conduct", "ysr_mconduct",
+#   "ysr_external_t", "ysr_social_t", "ysr_attentionproblems_t",
+#   "ysr_rulebreak_t", "ysr_mrulebreak_t",
+#   "ysr_aggressive_t", "ysr_maggressive_t", 
+#   "ysr_anxiety_t", "ysr_adhd_t", "ysr_odd_t",
+#   "ysr_conduct_t", "ysr_mconduct_t")
+# 
+# short_ind_names = c(
+#   "bisb", "bsss8", "bsss_es", "bsss_bs", "bsss_ts", "bsss_sd",
+#   "ext", "anxdep", "social",
+#   "attnprob", "rulebreak", "mr_break", 
+#   "aggr", "maggr",
+#   "anx", "adhd", "odd", "conduct", "mconduct",
+#   "ext_t", "soc_t", "attnprob_t",
+#   "rulebreak_t", "mr_break_t",
+#   "aggr_t", "maggr_t", 
+#   "anx_t", "adhd_t", "odd_t",
+#   "conduct_t", "mconduct_t")
+
+variable_names = c("sid", "grpid",
+  "race_ethnicity", "male", "age", "grade10", "parent_edu4", 
+  "bisb", "bsss8", "bsss_es", "bsss_bs","bsss_ts", "bsss_sd",
+  "ysr_external", "ysr_anxdep", "ysr_social",
+  "ysr_attentionproblems", "ysr_rulebreak", "ysr_mrulebreak", 
+  "ysr_aggressive", "ysr_maggressive",
+  "ysr_anxiety", "ysr_adhd", "ysr_odd", "ysr_conduct", "ysr_mconduct")
+
+indicator_names = c(
+  "bisb", "bsss8", "bsss_es", "bsss_bs","bsss_ts", "bsss_sd",
+  "ysr_external", "ysr_anxdep", "ysr_social",
+  "ysr_attentionproblems", "ysr_rulebreak", "ysr_mrulebreak", 
+  "ysr_aggressive", "ysr_maggressive",
+  "ysr_anxiety", "ysr_adhd", "ysr_odd", "ysr_conduct", "ysr_mconduct")
+
+short_ind_names = c(
+  "bisb", "bsss8", "bsss_es", "bsss_bs", "bsss_ts", "bsss_sd",
+  "ext", "anxdep", "social",
+  "attnprob", "rulebreak", "mr_break", 
+  "aggr", "maggr",
+  "anx", "adhd", "odd", "conduct", "mconduct")
+
+# Fix for export
+#efa.sample.data$X = NULL
+
+efa.sample.df = efa.sample.data[variable_names]
+
+# Rename
+efa.sample.df = efa.sample.df %>%
+  rename_with(~ short_ind_names, all_of(indicator_names)) %>%
+  na.omit()
+ind_data   = efa.sample.df[short_ind_names]
+```
+
+
+```{r}
+str(ind_data)
+```
+
+
+```{r}
+fa.corr = cor(ind_data)
+diag(fa.corr) = 0
+corrplot::corrplot(fa.corr)
+```
+
+# High Correlations
+```{r}
+fa.ind_corr = data.frame(cor(ind_data))
+fa.ind_var_corrs = sort(fa.ind_corr[lower.tri(fa.ind_corr)])
+
+fa.ind_var_corrs = sort(fa.ind_corr[lower.tri(fa.ind_corr)])
+
+sum(abs(fa.ind_var_corrs) > 0.85)
+
+too_high_correlations = fa.ind_var_corrs[abs(fa.ind_var_corrs) > 0.85]
+too_high_correlations
+
+cat("\n\n")
+for (high_corr in too_high_correlations){
+  cat("Corr:", high_corr)
+  print(which(fa.ind_corr == high_corr, arr.ind = T))
+  cat("\n\n")
+}
+```
+
+To drop:
+c("conduct", "aggr", "rulebreak", "ext", "mr_break", "odd", "anxdep", "adhd")
+
+# Low Correlations
+```{r}
+fa.ind_corr = data.frame(cor(ind_data))
+fa.ind_var_corrs = sort(fa.ind_corr[lower.tri(fa.ind_corr)])
+
+fa.ind_var_corrs = sort(fa.ind_corr[lower.tri(fa.ind_corr)])
+
+sum(abs(fa.ind_var_corrs) < 0.01)
+
+too_low_correlations = fa.ind_var_corrs[abs(fa.ind_var_corrs) < 0.01]
+too_low_correlations
+
+low_corrs_names = c()
+low_corrs_idx   = c()
+for (low_corr in too_low_correlations){
+  #print(which(fa.ind_corr == low_corr, arr.ind = T))
+  low_corrs_names[[length(low_corrs_names)+1]] = rownames(which(fa.ind_corr == low_corr, arr.ind = T))
+  low_corrs_idx[[length(low_corrs_idx)+1]] =which(fa.ind_corr == low_corr, arr.ind = T)[c(1,2)]
+}
+
+sort(table(unlist(low_corrs_names)))
+```
+
+```{r}
+high_corr_cols = c("conduct", "aggr", "rulebreak", "ext", "mr_break", "odd", "anxdep", "adhd")
+
+# Remove cols
+ind_data = ind_data[, !names(ind_data) %in% high_corr_cols]
+efa.sample.df = efa.sample.df[, !names(efa.sample.df) %in% high_corr_cols]
+```
+
+```{r}
+fa.corr = cor(ind_data)
+diag(fa.corr) = 0
+corrplot::corrplot(fa.corr)
+```
+
+# Scale/Xfm Checks
+```{r}
+summary(ind_data)
+```
+## Dist checks
+```{r}
+# Function to create histogram and Q-Q plot
+plot_dist <- function(x, var_name) {
+  par(mfrow=c(1,2))
+  hist(x, main=paste("Histogram of", var_name))
+  qqnorm(x, main=paste("Q-Q Plot of", var_name))
+  qqline(x)
+}
+
+# Apply to each variable
+lapply(names(ind_data), function(var) plot_dist(ind_data[[var]], var))
+
+```
+
+### Xfm lists
+log1p: "mconduct", "social", "anx"
+!square: bsss_es
+sqrt: "bsss_ts", "bsss_sd", "maggr"
+
+```{r}
+xfm = log1p
+col_list = c("mconduct", "social", "anx")
+
+ind_data[col_list] = lapply(ind_data[col_list], function(x) xfm(x))
+efa.sample.df[col_list] = lapply(efa.sample.df[col_list], function(x) xfm(x))
+
+xfm = function(x){x**2}
+col_list = c("bsss_es")
+
+#ind_data[col_list] = lapply(ind_data[col_list], function(x) xfm(x))
+#efa.sample.df[col_list] = lapply(efa.sample.df[col_list], function(x) xfm(x))
+
+xfm = sqrt
+col_list = c("bsss_ts", "bsss_sd", "maggr")
+
+ind_data[col_list] = lapply(ind_data[col_list], function(x) xfm(x))
+efa.sample.df[col_list] = lapply(efa.sample.df[col_list], function(x) xfm(x))
+```
+
+### Post xfm summary
+```{r}
+summary(ind_data)
+```
+
+## Skew and kurtosis
+```{r}
+describe(ind_data)
+lapply(ind_data, shapiro.test)
+```
+
+```{r}
+boxplot(ind_data)
+```
+
+```{r}
+pairs(ind_data[,1:min(ncol(ind_data),5)]) # First 5 variables for brevity
+corrplot(cor(ind_data))
+```
+
+## Zero-inflation and bounds check
+```{r}
+lapply(ind_data, function(x) sum(x == 0))
+lapply(ind_data, range)
+```
+
+```{r}
+# Standardize all variables
+ind_data_scaled <- as.data.frame(scale(ind_data[names(ind_data)]))
+
+# Check results
+summary(ind_data_scaled)
+boxplot(ind_data_scaled)
+```
+
+```{r}
+efa.sample.df[names(ind_data_scaled)] = ind_data_scaled
+
+mf_mplus_file = file.path(DATA_DIR, "ahrb_fu-1_desc-ext.dat")
+
+MplusAutomation::prepareMplusData(efa.sample.df, filename = mf_mplus_file)
+```
+
+
+

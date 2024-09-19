@@ -1,0 +1,44 @@
+TITLE: CFA based on 3-factor EFA results with standardized data
+
+DATA:
+FILE =
+"/Users/icd/Library/CloudStorage/Dropbox/Projects/modeling_mIGT/Data/ahrb_fu-1_desc-ext.dat";
+
+VARIABLE:
+NAMES ARE sid grpid
+	race_ethnicity male age grade10 parent_edu4
+	bisb bsss8 bsss_es bsss_bs bsss_ts bsss_sd
+	social attnprob maggr anx mconduct;
+	
+USEVARIABLES ARE bisb bsss_es bsss_bs bsss_ts bsss_sd 
+                 attnprob maggr mconduct;
+
+CLUSTER IS grpid;
+
+ANALYSIS:
+TYPE = COMPLEX;
+ESTIMATOR = MLR;
+ITERATIONS = 100000;
+CONVERGENCE = 0.00005;
+
+MODEL:
+! Factor 1: Sensation Seeking
+F1 BY bsss_es bsss_bs bsss_ts bsss_sd;
+
+! Factor 2: Attention Problems/Impulsivity
+F2 BY bisb attnprob;
+
+! Factor 3: Conduct Problems
+F3 BY mconduct maggr bsss_sd;
+
+! Factor correlations
+F1 WITH F2 F3;
+F2 WITH F3;
+
+! Shared errors
+ATTNPROB WITH BSSS_SD;
+MCONDUCT WITH ATTNPROB;
+
+OUTPUT:
+STDYX;
+MODINDICES;

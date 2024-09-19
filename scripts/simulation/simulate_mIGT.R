@@ -15,10 +15,10 @@ DECK_PROPERTIES <- list(
 
 # Define parameter ranges for suggestion
 PARAM_RANGES <- list(
-  con = list(low = c(-2, -1), medium = c(-1, 1), high = c(1, 2)),
-  update = list(low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1)),
-  wgt_pun = list(low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1)),
-  wgt_rew = list(low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1))
+  con = list(range = c(-2, 2), min = -2, max = 2, low = c(-2, -1), medium = c(-1, 1), high = c(1, 2)),
+  wgt_pun = list(range = c(0, 1), min = 0, max = 1, low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1)),
+  wgt_rew = list(range = c(0, 1), min = 0, max = 1, low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1)),
+  update = list(range = c(0, 1), min = 0, max = 1, low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1))
 )
 
 # Subject class (Model 1 - EVL)
@@ -121,28 +121,6 @@ generate_outcome <- function(deck, trial) {
   }
 }
 
-# Function to suggest parameter values
-suggest_parameters <- function(n_sets) {
-  param_sets <- vector("list", n_sets + 3)
-  
-  # Ensure we have at least one set with all low, all medium, and all high values
-  param_sets[[1]] <- lapply(PARAM_RANGES, function(range) round(runif(1, range$low[1], range$low[2]), 2))
-  param_sets[[2]] <- lapply(PARAM_RANGES, function(range) round(runif(1, range$medium[1], range$medium[2]), 2))
-  param_sets[[3]] <- lapply(PARAM_RANGES, function(range) round(runif(1, range$high[1], range$high[2]), 2))
-  
-  # Create sets with interesting combinations
-  for (i in 4:(length(param_sets) + 1)) {
-    param_set <- list()
-    for (param in names(PARAM_RANGES)) {
-      range_choice <- sample(c("low", "medium", "high"), 1)
-      range <- PARAM_RANGES[[param]][[range_choice]]
-      param_set[[param]] <- round(runif(1, range[1], range[2]),2)
-    }
-    param_sets[[i]] <- param_set
-  }
-  
-  return(param_sets)
-}
 
 # Simulation functions
 generate_balanced_deck_sequence <- function(n_blocks, trials_per_block) {
@@ -214,13 +192,9 @@ simulate_igt_session <- function(subject, n_blocks = 6, trials_per_block = 20, t
 }
 
 # Modified function to generate IGT data for multiple subjects
-generate_igt_data <- function(n_subjects, param_sets = NULL, training_decks = NULL, training_choices = NULL, output_dir = NULL) {
+generate_igt_data <- function(n_subjects, param_sets, training_decks = NULL, training_choices = NULL) {
   all_sessions <- list()
   subject_params <- data.table()
-  
-  if (is.null(param_sets)) {
-    param_sets <- suggest_parameters(n_subjects)
-  }
   
   for (i in 1:n_subjects) {
     params <- param_sets[[i]]
@@ -241,12 +215,6 @@ generate_igt_data <- function(n_subjects, param_sets = NULL, training_decks = NU
   
   result <- list(data = simulated_data, subject_params = subject_params)
   
-  if (!is.null(output_dir)) {
-    fwrite(simulated_data, file.path(output_dir, "sim_igt_mod_ev_desc-data.csv"))
-    fwrite(subject_params, file.path(output_dir, "sim_igt_mod_ev_desc-sub_params.csv"))
-    saveRDS(param_sets, file.path(output_dir, "sim_igt_mod_ev_desc-true_param_sets.rds"))
-  }
-  
   return(result)
 }
 
@@ -255,9 +223,13 @@ option_list <- list(
   make_option(c("-n", "--n_subjects"), type="integer", default=100, help="Number of subjects (def: 100)"),
   make_option(c("-b", "--n_blocks"), type="integer", default=6, help="Number of blocks (def: 6)"),
   make_option(c("-t", "--trials_per_block"), type="integer", default=20, help="Trials per block (def: 20)"),
-  make_option(c("-f", "--fixed_params"), type="character", default=NULL, help="Path to fixed parameters file"),
-  make_option(c("-s", "--suggest_params"), action="store_true", default=FALSE, help="Suggest parameter values"),
-  make_option(c("-o", "--output_dir"), type="character", default=NULL, help="Output directory for simulated data (def: Data/rds/sim")
+  make_option(c("-p", "--param_space_exp"), type="character", default="ssFPSE", help="Parameter Space Exploration type to generate parameter values (def: ssFPSE) [mbSPSepse, sbSPSepse, tSPSepse, hpsEPSE, thpsEPSE]"),
+  make_option(c("-o", "--output_dir"), type="character", default=NULL, help="Output directory for simulated data (def: Data/sim/txt"),
+  make_option(c("-d", "--params_dir"), type="character", default=NULL, help="Directory for simulated parameters (def: Data/sim/params"),
+  make_option(c("-m", "--model"), type="character", default=NULL, help="Model name"),
+  make_option(c("-k", "--task"), type="character", default=NULL, help="Task name"),
+  make_option(c("-g", "--group"), type="character", default=NULL, help="Group type (sing, group, group_hier)"),
+  make_option(c("-s", "--seed"), type="integer", default=775625534, help="Seed for reproducibility (def: 775625534)")
 )
 
 opt_parser <- OptionParser(option_list=option_list)
@@ -266,11 +238,16 @@ opt <- parse_args(opt_parser)
 # Set up directories
 PROJ_DIR <- here::here()
 DATA_DIR <- file.path(PROJ_DIR, "Data")
-DATA_RDS_DIR <- file.path(DATA_DIR, "rds")
-DATA_RDS_SIM_DIR <- file.path(DATA_RDS_DIR, "sim")
+DATA_SIM_DIR <- file.path(DATA_DIR, "sim")
+DATA_SIM_TXT_DIR <- file.path(DATA_SIM_DIR, "txt")
+DATA_SIM_PARAMS_DIR <- file.path(DATA_SIM_DIR, "params")
 
 if (is.null(opt$output_dir)) {
-  opt$output_dir <- DATA_RDS_SIM_DIR
+  opt$output_dir <- DATA_SIM_TXT_DIR
+}
+
+if (is.null(opt$params_dir)) {
+  opt$params_dir <- DATA_SIM_PARAMS_DIR
 }
 
 if (!dir.exists(opt$output_dir)) {
@@ -278,21 +255,52 @@ if (!dir.exists(opt$output_dir)) {
 }
 
 # Main execution
-set.seed(123)  # for reproducibility
+set.seed(opt$seed)
 
-if (opt$suggest_params) {
-  suggested_params <- suggest_parameters(opt$n_subjects)
-  saveRDS(suggested_params, file.path(opt$output_dir, "suggested_parameters.rds"))
-  cat("Suggested parameters saved to", file.path(opt$output_dir, "suggested_parameters.rds"), "\n")
-} else {
-  suggested_params <- NULL
+# Define the model
+if (is.null(opt$model) || is.null(opt$task) || is.null(opt$group)) {
+  stop("Please specify a model, task, and group type using the -m, -k, and -g options.")
 }
 
-if (!is.null(opt$fixed_params)) {
-  fixed_params <- readRDS(opt$fixed_params)
-} else {
-  fixed_params <- suggested_params
-}
+model_name <- opt$model
+task <- opt$task
+group_type <- opt$group
+full_model_name = paste(task, group_type, model_name, sep="_")
+
+switch(
+  opt$param_space_exp,
+  "ssFPSE" = {
+    filepath = file.path(opt$params_dir, paste0(full_model_name, "_desc-sim_params_", opt$param_space_exp, ".rds"))
+    sim_params <- readRDS(filepath)
+    cat("Loaded Stratified Sampling FPSE simulated parameters from", filepath, "\n")
+  },
+  "mbSPSepse" = {
+    filepath = file.path(opt$params_dir, paste0(full_model_name, "_desc-sim_params_", opt$param_space_exp, ".rds"))
+    sim_params <- readRDS(filepath)
+    cat("Loaded Median-based Subject Posterior Sampling EPSE simulated parameters from", filepath, "\n")
+  },
+  "sbSPSepse" = {
+    filepath = file.path(opt$params_dir, paste0(full_model_name, "_desc-sim_params_", opt$param_space_exp, ".rds"))
+    sim_params <- readRDS(filepath)
+    cat("Loaded Simulation-based Subject Posterior Sampling EPSE simulated parameters from", filepath, "\n")
+  },
+  "tSPSepse" = {
+    filepath = file.path(opt$params_dir, paste0(full_model_name, "_desc-sim_params_", opt$param_space_exp, ".rds"))
+    sim_params <- readRDS(filepath)
+    cat("Loaded Tuple Subject Posterior Sampling EPSE simulated parameters from", filepath, "\n")
+  },
+  "hpsEPSE" = {
+    filepath = file.path(opt$params_dir, paste0(full_model_name, "_desc-sim_params_", opt$param_space_exp, ".rds"))
+    sim_params <- readRDS(filepath)
+    cat("Loaded Hierarchical Posterior Sampling EPSE simulated parameters from", filepath, "\n")
+  },
+  "thpsEPSE" = {
+    filepath = file.path(opt$params_dir, paste0(full_model_name, "_desc-sim_params_", opt$param_space_exp, ".rds"))
+    sim_params <- readRDS(filepath)
+    cat("Loaded Tuple Hierarchical Posterior Sampling EPSE simulated parameters from", filepath, "\n")
+  },
+  stop(paste0("Please a valid parameter exploration type. This is invalid: ", opt$param_space_exp))
+)
 
 # Define training decks and choices
 training_decks <- c(4, 3, 2, 3, 3, 2, 2, 4, 2, 1, 4, 1, 4, 3, 2, 4, 3, 1, 1, 1)
@@ -300,11 +308,14 @@ training_choices <- c(1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0
 
 simulation_result <- generate_igt_data(
   n_subjects = opt$n_subjects,
-  param_sets = fixed_params,
+  param_sets = sim_params,
   training_decks = training_decks,
-  training_choices = training_choices,
-  output_dir = opt$output_dir
+  training_choices = training_choice
 )
+
+# Save data
+fwrite(simulation_result$data, file.path(opt$output_dir, paste0("sim_", full_model_name, "_desc-data_", opt$param_space_exp, ".csv")))
+fwrite(simulation_result$subject_params, file.path(opt$output_dir, paste0("sim_", full_model_name, "_desc-params_", opt$param_space_exp, ".csv")))
 
 cat("Simulation completed. Data saved to", opt$output_dir, "\n")
 

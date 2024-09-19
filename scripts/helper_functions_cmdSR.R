@@ -224,7 +224,7 @@ analyze_mcse <- function(fit, params) {
 
 extract_sample_data <- function(data, data_params, n_trials = NULL, n_subs = NULL, 
                                 RTbound_ms = 50, RTbound_reject_ms = 100, rt_method = "remove", 
-                                use_percentile = FALSE, minrt_ep_ms = 0) {
+                                use_percentile = FALSE, minrt_ep_ms = 0, SID = F) {
   # Preprocess data
   data <- preprocess_data(data, RTbound_reject_ms, rt_method)
   
@@ -251,7 +251,7 @@ extract_sample_data <- function(data, data_params, n_trials = NULL, n_subs = NUL
       filter(trial <= n_trials) %>%
       ungroup() %>%
       group_by(sid) %>%
-      filter(n() == n_trials) %>%
+      filter(dplyr::n() == n_trials) %>%
       ungroup()
     
     if (nrow(data) / n_trials > n_subs) {
@@ -264,6 +264,10 @@ extract_sample_data <- function(data, data_params, n_trials = NULL, n_subs = NUL
   
   # Initialize the data list
   data_list <- list()
+  
+  if (SID) {
+    data_list$sid = unique(data$sid)
+  }
   
   # Helper function to create a matrix from a data frame
   create_matrix <- function(df, value_var, n_trials) {
@@ -341,7 +345,7 @@ preprocess_data <- function(data, RTbound_ms, rt_method = "remove") {
   
   # Convert columns to appropriate types
   data <- data %>%
-    mutate(
+    dplyr::mutate(
       sid = as.factor(sid),
       v_response = as.integer(v_response),
       v_targetdeck = as.integer(v_targetdeck),
@@ -366,7 +370,7 @@ preprocess_data <- function(data, RTbound_ms, rt_method = "remove") {
   # Reset trial numbers
   data <- data %>%
     group_by(sid) %>%
-    mutate(trial = row_number()) %>%
+    dplyr::mutate(trial = row_number()) %>%
     ungroup()
   
   return(data)
