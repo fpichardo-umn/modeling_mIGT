@@ -10,6 +10,7 @@ suppressPackageStartupMessages({
   library(tidyr)
   library(ggplot2)
   library(data.table)
+  library(corrplot)
 })
 
 # Function to extract parameter summaries
@@ -67,6 +68,7 @@ plot_recovery <- function(data, title) {
     geom_point(alpha = 0.5) +
     facet_wrap(~parameter, scales = "free") +
     geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+    geom_smooth(method = "lm", se = FALSE, color = "blue", linetype = "solid") +
     labs(x = "True Parameter Value", y = "Estimated Parameter Value", title = title) +
     theme_minimal()
 }
@@ -133,8 +135,8 @@ option_list = list(
   make_option(c("-c", "--n_chains"), type="integer", default=4, help="Number of chains"),
   make_option(c("-a", "--adapt_delta"), type="double", default=0.95, help="Adapt delta"),
   make_option(c("-d", "--max_treedepth"), type="integer", default=12, help="Max tree depth"),
-  make_option(c("-s", "--seed"), type="integer", default=123, help="Random seed"),
-  make_option(c("-p", "--param_space_exp"), type="character", default="ssFPSE", help="Parameter Space Exploration type"),
+  make_option(c("-s", "--seed"), type="integer", default=1205234970, help="Random seed"),
+  make_option(c("-p", "--param_space_exp"), type="character", default="ssFPSE", help="Parameter Space Exploration type (def: ssFPSE) [mbSPSepse, sbSPSepse, tSPSepse, hpsEPSE, thpsEPSE]"),
   make_option(c("-m", "--model"), type="character", default=NULL, help="Model name"),
   make_option(c("-k", "--task"), type="character", default=NULL, help="Task name"),
   make_option(c("-g", "--group"), type="character", default=NULL, help="Group type (sing, group, group_hier)"),
@@ -273,7 +275,107 @@ individual_within_metrics <- calculate_within_individual_metrics(individual_reco
 cat("Group-level recovery metrics:\n")
 print(group_overall_metrics)
 cat("\nIndividual-level recovery metrics:\n")
+cat("Overall:\n")
 print(individual_overall_metrics)
+cat("\nAcross individuals:\n")
+print(individual_param_metrics)
+cat("\nWithin individuals:\n")
+print(individual_param_metrics)
+
+# Calculate correlations for each parameter
+param_correlations <- individual_recovery_data %>%
+  group_by(parameter) %>%
+  summarize(correlation = cor(value, true_value))
+
+# Calculate correlations for each individual
+individual_correlations <- individual_recovery_data %>%
+  group_by(subject_id) %>%
+  summarize(correlation = cor(value, true_value))
+
+
+corr_plot_within = individual_recovery_data %>% 
+  filter(subject_id %in% sample(unique(individual_recovery_data$subject_id), min(6, length(unique(individual_recovery_data$subject_id))))) %>%
+  ggplot(aes(x = true_value, y = value, color = parameter)) +
+    geom_point(size = 3) +  # Increased point size
+  geom_abline(intercept = 0, slope = 1, color = "red", linetype = "dashed") +
+    geom_smooth(aes(group = subject_id), method = "lm", se = FALSE, 
+                color = "black", linetype = "dotted", alpha = 0.5) +  # Dashed, slightly transparent line
+    facet_wrap(~subject_id, scales = "free") +
+    labs(title = "Individual Parameter Estimates vs True Values (Sample of 6 Subjects)",
+         x = "True Value", y = "Estimated Value") +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+
+# Save the individual correlation plot
+ggsave(file.path(opt$output_dir, paste0("individual_correlation_plot_", full_model_name, "_", opt$param_space_exp, ".png")), 
+       corr_plot_within, width = 15, height = 12)
+
+
+# Create heatmap for parameter correlations
+param_corr_matrix <- individual_recovery_data %>%
+  group_by(parameter) %>%
+  summarize(correlation = cor(value, true_value)) %>%
+  spread(parameter, correlation)
+
+param_corr_matrix <- as.matrix(param_corr_matrix)
+param_corr_matrix[lower.tri(param_corr_matrix)] <- t(param_corr_matrix)[lower.tri(param_corr_matrix)]
+
+# Now, create the heatmap
+param_heatmap <- corrplot::corrplot(param_corr_matrix, 
+                                    method = "color", 
+                                    type = "full",  # Changed from "upper" to "full"
+                                    addCoef.col = "black", 
+                                    tl.col = "black", 
+                                    tl.srt = 45, 
+                                    diag = TRUE,  # Changed from FALSE to TRUE
+                                    is.corr = FALSE,  # Added this because we're not using a correlation matrix
+                                    title = "Parameter Correlations (Estimated vs True)",
+                                    mar = c(0,0,2,0))
+
+
+# Save the parameter correlation heatmap
+png(file.path(opt$output_dir, paste0("param_correlation_heatmap_", full_model_name, "_", opt$param_space_exp, ".png")), 
+    width = 800, height = 600)
+param_heatmap
+dev.off()
+
+# Create heatmap for individual correlations
+indiv_corr_matrix <- individual_recovery_data %>%
+  filter(subject_id %in% sample(unique(individual_recovery_data$subject_id), min(6, length(unique(individual_recovery_data$subject_id))))) %>%
+  group_by(subject_id) %>%
+  summarize(correlation = cor(value, true_value)) %>%
+  spread(subject_id, correlation)
+
+indiv_corr_matrix <- as.matrix(indiv_corr_matrix)
+indiv_corr_matrix[lower.tri(indiv_corr_matrix)] <- t(indiv_corr_matrix)[lower.tri(indiv_corr_matrix)]
+
+indiv_heatmap <- corrplot::corrplot(as.matrix(indiv_corr_matrix), 
+                          method = "color", 
+                          type = "upper", 
+                          addCoef.col = "black", 
+                          tl.col = "black", 
+                          tl.srt = 45, 
+                          diag = FALSE,
+                          title = "Individual Correlations (Estimated vs True)",
+                          mar = c(0,0,2,0))
+
+# Save the individual correlation heatmap
+png(file.path(opt$output_dir, paste0("individual_correlation_heatmap_", full_model_name, "_", opt$param_space_exp, ".png")), 
+    width = 800, height = 600)
+indiv_heatmap
+dev.off()
+
+indiv_corr_matrix <- individual_recovery_data %>%group_by(subject_id) %>%
+  summarize(correlation = cor(value, true_value)) %>%
+  spread(subject_id, correlation)
+
+# Print correlation summaries
+cat("\nParameter Correlations:\n")
+print(param_correlations)
+
+cat("\nIndividual Correlations Summary:\n")
+print(summary(individual_correlations$correlation))
+
 
 # Save results
 saveRDS(list(
@@ -286,6 +388,8 @@ saveRDS(list(
   individual_param_metrics = individual_param_metrics,
   individual_within_metrics = individual_within_metrics,
   n_subjects = n_subjects,
+  indiv_corr_matrix = indiv_corr_matrix,
+  param_corr_matrix = param_corr_matrix,
   selected_subjects = selected_subjects
 ), file = file.path(opt$output_dir, paste0("parameter_recovery_results_", full_model_name, "_", opt$param_space_exp, ".rds")))
 

@@ -6,8 +6,8 @@
 #SBATCH --tmp=32gb
 #SBATCH -t 96:00:00
 #SBATCH --mail-type=ALL
-#SBATCH -o log_files/postpc/%x_%A_%a.out
-#SBATCH -e log_files/postpc/%x_%A_%a.err
+#SBATCH -o log_files/param_recovery/%x_%A_%a.out
+#SBATCH -e log_files/param_recovery/%x_%A_%a.err
 
 # Load necessary modules
 module load R/4.2.0-rocky8
@@ -22,10 +22,6 @@ cd ${SLURM_SUBMIT_DIR}
 source ./scripts/configs/fit_params_sim.conf
 source ./scripts/configs/data_params_sim.conf
 
-# Generate simulation data
-Rscript ./scripts/simulation/simulate_mIGT.R \
-  --n_subjects ${n_subs}
-
 # Run the R script with the configuration
 Rscript ./scripts/ppc/param_recovery_igt_mod.R \
   --n_subjects ${n_subs} \
@@ -33,4 +29,10 @@ Rscript ./scripts/ppc/param_recovery_igt_mod.R \
   --n_iter ${n_iter} \
   --n_chains ${n_chains} \
   --adapt_delta ${adapt_delta} \
-  --max_treedepth ${max_treedepth}
+  --max_treedepth ${max_treedepth} \
+  --seed ${SLURM_JOB_ID} \
+  --param_space_exp ${PARAM_SPACE_EXP} \
+  --model ${MODEL_NAME} \
+  --task ${TASK} \
+  --group ${GROUP_TYPE} \
+  --output_dir ${OUTPUT_DIR}
