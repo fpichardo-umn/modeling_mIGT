@@ -99,3 +99,5 @@ Chain 1 Iteration: 350 / 350 [100%]  (Sampling)
 Chain 1 finished in 2681.5 seconds.
 Chain 2 Iteration:  70 / 350 [ 20%]  (Sampling) 
 Chain 2 Iteration: 105 / 350 [ 30%]  (Sampling) 
+Chain 2 Iteration: 140 / 350 [ 40%]  (Sampling) 
+Chain 2 Iteration: 175 / 350 [ 50%]  (Sampling) 

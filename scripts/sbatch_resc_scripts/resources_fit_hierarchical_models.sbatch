@@ -32,7 +32,7 @@ source ./scripts/configs/fit_params_${FIT_CONFIG}.conf
 source ./scripts/configs/data_params_${DATA_CONFIG}.conf
 
 # Run the R script with the configuration
-Rscript ./scripts/fit_hierarchical_models_cmdSR.R \
+Rscript ./scripts/fit/fit_hierarchical_models.R \
   -m ${MODEL_NAME} \
   -t ${MODEL_TYPE} \
   -k ${TASK} \
@@ -45,5 +45,4 @@ Rscript ./scripts/fit_hierarchical_models_cmdSR.R \
   --n_iter ${n_iter} \
   --n_chains ${n_chains} \
   --adapt_delta ${adapt_delta} \
-  --max_treedepth ${max_treedepth} \
-  --check_iter ${CHECK_ITER}
+  --max_treedepth ${max_treedepth}

@@ -52,9 +52,9 @@ CHECK_ITER=${CHECK_ITER:-1000}
 # Directory checks
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 CONFIG_DIR="${SCRIPT_DIR}/configs"
-R_SCRIPT="${SCRIPT_DIR}/fit_hierarchical_models_cmdSR.R"
-SUBMIT_SCRIPTS_DIR="${SCRIPT_DIR}/submit_scripts"
-SBATCH_SCRIPT="${SUBMIT_SCRIPTS_DIR}/resources_fit_hierarchical_models_cmdSR.sbatch"
+R_SCRIPT="${SCRIPT_DIR}/fit/fit_hierarchical_models_cmdSR.R"
+SBATCH_SCRIPT_DIR="${SCRIPT_DIR}/sbatch_resc_scripts"
+SBATCH_SCRIPT="${SBATCH_SCRIPT_DIR}/resources_fit_hierarchical_models_cmdSR.sbatch"
 
 PROJ_DIR="${SCRIPT_DIR}/.."
 MODEL_DIR="${PROJ_DIR}/models/bin"

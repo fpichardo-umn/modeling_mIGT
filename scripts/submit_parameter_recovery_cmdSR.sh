@@ -48,8 +48,8 @@ DATA_CONFIG=${DATA_CONFIG:-default}
 # Directory checks
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 CONFIG_DIR="${SCRIPT_DIR}/configs"
-SUBMIT_SCRIPTS_DIR="${SCRIPT_DIR}/submit_scripts"
-SBATCH_SCRIPT="${SUBMIT_SCRIPTS_DIR}/param_recovery_igt_mod_cmdSR.sbatch"
+SBATCH_SCRIPT_DIR="${SCRIPT_DIR}/sbatch_resc_scripts"
+SBATCH_SCRIPT="${SBATCH_SCRIPT_DIR}/param_recovery_igt_mod_cmdSR.sbatch"
 
 PROJ_DIR="${SCRIPT_DIR}/.."
 DATA_DIR="${PROJ_DIR}/Data"

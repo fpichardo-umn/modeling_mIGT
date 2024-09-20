@@ -49,9 +49,9 @@ MODEL_TYPE=${MODEL_TYPE:-fit}
 # Directory checks
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 CONFIG_DIR="${SCRIPT_DIR}/configs"
-R_SCRIPT="${SCRIPT_DIR}/fit_hierarchical_models.R"
-SUBMIT_SCRIPTS_DIR="${SCRIPT_DIR}/submit_scripts"
-SBATCH_SCRIPT="${SUBMIT_SCRIPTS_DIR}/resources_fit_hierarchical_models.sbatch"
+R_SCRIPT="${SCRIPT_DIR}/fit/fit_hierarchical_models.R"
+SBATCH_SCRIPT_DIR="${SCRIPT_DIR}/sbatch_resc_scripts"
+SBATCH_SCRIPT="${SBATCH_SCRIPT_DIR}/resources_fit_hierarchical_models.sbatch"
 
 PROJ_DIR="${SCRIPT_DIR}/.."
 MODEL_DIR="${PROJ_DIR}/models/rds"
