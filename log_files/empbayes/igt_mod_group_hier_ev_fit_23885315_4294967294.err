@@ -1,5 +1,0 @@
-Warning messages:
-1: In read.spss(file.path(SAFE_DATA_DIR, "AHRB.P1W1_v11_AW_v2.sav"),  :
-  Undeclared level(s) 0.5, 1.5, 2.5 added in variable: employment_parernal_mean
-2: In read.spss(file.path(SAFE_DATA_DIR, "AHRB.P1W1_v11_AW_v2.sav"),  :
-  Undeclared level(s) 1.5, 2.5, 3.5, 4.5, 5.5 added in variable: parent_edu6

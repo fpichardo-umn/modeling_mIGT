@@ -100,6 +100,18 @@ param_xfm = function(param){
          },
          "update" = {
            function(x) plogis(x) * 4 -2
+         },
+         "boundary" = {
+           function(x) exp(plogis(x) * 5 -2)
+         },
+         "tau" = {
+           function(x) plogis(x) * .1 + .05
+         },
+         "beta" = {
+           function(x) plogis(x) * 4 -2
+         },
+         "drift_con" = {
+           function(x) plogis(x) * 4 -2
          }
   )
 }

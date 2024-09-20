@@ -18,7 +18,6 @@ source(here("scripts", "helper_functions_cmdSR.R"))
 option_list = list(
   make_option(c("-m", "--model"), type="character", default=NULL, help="Model name"),
   make_option(c("-k", "--task"), type="character", default=NULL, help="Task name"),
-  make_option(c("-g", "--group"), type="character", default=NULL, help="Group type (sing, group, group_hier)"),
   make_option(c("--seed"), type="integer", default=29518, help="Set seed"),
   make_option(c("--debug"), action="store_true", default=FALSE, help="Run in debug mode"),
   make_option(c("--verbose"), action="store_true", default=FALSE, help="Run in verbose mode"),
@@ -29,8 +28,8 @@ opt_parser <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
 
 # Check for required options
-if (is.null(opt$model) || is.null(opt$task) || is.null(opt$group)) {
-  stop("Please specify a model, task, and group type using the -m, -k, and -g options.")
+if (is.null(opt$model) || is.null(opt$task)) {
+  stop("Please specify a model and task using the -m and -k options.")
 }
 
 # Set up directories
@@ -48,7 +47,7 @@ dir.create(DATA_TXT_eB_DIR, recursive = TRUE, showWarnings = FALSE)
 set.seed(opt$seed)
 
 # Construct full model name
-full_model_name <- paste(opt$task, opt$group, opt$model, sep="_")
+full_model_name <- paste(opt$task, "group_hier", opt$model, sep="_")
 
 # Functions to generate informative priors
 fit_truncated_normal <- function(param_draws, init_lower = NULL, init_upper = NULL, verbose = FALSE) {
@@ -161,28 +160,15 @@ generate_informative_priors <- function(fit, debug = FALSE, verbose = FALSE) {
 
 # Files
 hier_fit_file <- file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_desc-emp_hier_output.rds"))
-priors_file <- file.path(DATA_TXT_eB_DIR, paste0(full_model_name, "_informative_priors.txt"))
+priors_txt_file <- file.path(DATA_TXT_eB_DIR, paste0(full_model_name, "_informative_priors.txt"))
+priors_rds_file = file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_informative_priors.rds"))
 
 
 if (opt$dry_run) {
   cat("Dry run: Would attempt to load initial hierarchical fit from:", hier_fit_file, "\n")
-  cat("Dry run: Generating dummy data for priors...\n")
-  
-  # Create dummy data for dry run
-  dummy_draws <- matrix(rnorm(1000), ncol = 10)
-  colnames(dummy_draws) <- paste0("param", 1:10)
-  dummy_fit <- list(
-    draws = dummy_draws,
-    model_params = paste0("param", 1:5),
-    all_params = c(paste0("param", 1:10, "_pr[1]"), paste0("param", 1:10, "_pr[2]"))
-  )
-  
   cat("Dry run: Would generate informative priors...\n")
-  cat("Dry run: Would save informative priors to:", priors_file, "\n")
-  cat("Dry run: Would also save priors as RDS to:", 
-      file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_informative_priors.rds")), "\n")
-} else {
-  
+  cat("Dry run: Would save informative priors to txt file:", priors_txt_file, "\n")
+  cat("Dry run: Would also save priors as RDS to:", priors_rds_file, "\n")
 } else {
   # Load the initial hierarchical fit
   if (!file.exists(hier_fit_file)) {
@@ -195,16 +181,15 @@ if (opt$dry_run) {
   priors <- generate_informative_priors(hier_fit, debug = opt$debug, verbose = opt$verbose)
   
   # Save priors to txt file
-  priors_file <- file.path(DATA_TXT_eB_DIR, paste0(full_model_name, "_informative_priors.txt"))
   priors_df <- do.call(rbind, lapply(names(priors), function(param) {
     data.frame(parameter = param, t(priors[[param]]))
   }))
   
-  write.table(priors_df, file = priors_file, row.names = FALSE, sep = ",", quote = FALSE)
-  cat("Informative priors saved to:", priors_file, "\n")
+  write.table(priors_df, file = priors_txt_file, row.names = FALSE, sep = ",", quote = FALSE)
+  cat("Informative priors saved to:", priors_txt_file, "\n")
   
   # Also save as RDS for easier R loading
-  saveRDS(priors, file = file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_informative_priors.rds")))
+  saveRDS(priors, file = priors_rds_file)
   
   cat("Informative priors generation completed.\n")
 }

@@ -28,7 +28,7 @@ module load boost/1.82.0-gcc-13.1.0-sox6zlc
 cd ${SLURM_SUBMIT_DIR}
 
 # Source the config files
-source ./scripts/configs/fit_params_${FIT_CONFIG}.conf
+source ./scripts/configs/fit_params_emp_hier_${FIT_CONFIG}.conf
 source ./scripts/configs/data_params_${DATA_CONFIG}.conf
 
 # Function to check exit status and log
@@ -68,6 +68,9 @@ Rscript ./scripts/empbayes/generate_informative_priors.R \
   --verbose
 
 check_status $? "Generating informative priors"
+
+# Source the config files
+source ./scripts/configs/fit_params_emp_indiv_${FIT_CONFIG}.conf
 
 # Step 3: Run full empirical Bayes model
 echo "Starting full empirical Bayes model fit..."

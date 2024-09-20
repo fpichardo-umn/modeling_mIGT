@@ -5,11 +5,11 @@ module load R/4.2.0-rocky8
 
 # Function to print usage
 print_usage() {
-  echo "Usage: $0 -m <model_names> -f <fit_config> -d <data_config> -e <email> -k <task> -g <group_type> [-n]"
-  echo "Example: $0 -m \"ev,pvl\" -f default -d full -e your@email.edu -k igt_mod -g group_emp"
+  echo "Usage: $0 -m <model_names> -f <fit_config> -d <data_config> -e <email> -k <task> -[-n]"
+  echo "Example: $0 -m \"ev,pvl\" -f default -d full -e your@email.edu -k igt_mod"
   echo "Options:"
   echo "  -m    Comma-separated list of model names"
-  echo "  -f    Fit parameters config name (default: default)"
+  echo "  -f    Fit parameters config name for empirical bayes (default: simple) [complex]"
   echo "  -d    Data parameters config name (default: default)"
   echo "  -k    Task name (e.g., igt_mod)"
   echo "  -c    Number of iterations for checkpoint runs (default: 1000)"
@@ -41,7 +41,7 @@ if [ -z "$MODEL_NAMES" ] || [ -z "$USER_EMAIL" ] || [ -z "$TASK" ]; then
 fi
 
 # Set default values if not provided
-FIT_CONFIG=${FIT_CONFIG:-default}
+FIT_CONFIG=${FIT_CONFIG:-simple}
 DATA_CONFIG=${DATA_CONFIG:-default}
 MODEL_TYPE=${MODEL_TYPE:-fit}
 CHECK_ITER=${CHECK_ITER:-1000}
@@ -71,8 +71,11 @@ check_and_print() {
 }
 
 # Check config files
-[ -f "${CONFIG_DIR}/fit_params_${FIT_CONFIG}.conf" ]
-check_and_print "Fit config file: ${CONFIG_DIR}/fit_params_${FIT_CONFIG}.conf"
+[ -f "${CONFIG_DIR}/fit_params_emp_hier_${FIT_CONFIG}.conf" ]
+check_and_print "Fit config file: ${CONFIG_DIR}/fit_params_emp_hier_${FIT_CONFIG}.conf"
+
+[ -f "${CONFIG_DIR}/fit_params_emp_indiv_${FIT_CONFIG}.conf" ]
+check_and_print "Fit config file: ${CONFIG_DIR}/fit_params_emp_indiv_${FIT_CONFIG}.conf"
 
 [ -f "${CONFIG_DIR}/data_params_${DATA_CONFIG}.conf" ]
 check_and_print "Data config file: ${CONFIG_DIR}/data_params_${DATA_CONFIG}.conf"
@@ -115,19 +118,19 @@ IFS=',' read -ra MODEL_ARRAY <<< "$MODEL_NAMES"
 generate_r_call() {
   local model=$1
   local dry_run_flag=$2
-  echo "Rscript $R_SCRIPT -m $model -k $TASK -g $GROUP_TYPE --n_trials \${n_trials} --RTbound_ms \${RTbound_ms} --rt_method \${rt_method} --n_warmup \${n_warmup} --n_iter \${n_iter} --n_chains \${n_chains} --adapt_delta \${adapt_delta} --max_treedepth \${max_treedepth} --check_iter ${CHECK_ITER} $dry_run_flag"
+  echo "Rscript $R_SCRIPT -m $model -k $TASK --n_trials \${n_trials} --RTbound_ms \${RTbound_ms} --rt_method \${rt_method} --n_warmup \${n_warmup} --n_iter \${n_iter} --n_chains \${n_chains} --adapt_delta \${adapt_delta} --max_treedepth \${max_treedepth} --check_iter ${CHECK_ITER} $dry_run_flag"
 }
 
 generate_r2_call() {
   local model=$1
   local dry_run_flag=$2
-  echo "Rscript $R_SCRIPT2 -m $model -k $TASK -g $GROUP_TYPE --n_trials \${n_trials} --RTbound_ms \${RTbound_ms} --rt_method \${rt_method} --n_warmup \${n_warmup} --n_iter \${n_iter} --n_chains \${n_chains} --adapt_delta \${adapt_delta} --max_treedepth \${max_treedepth} -$dry_run_flag"
+  echo "Rscript $R_SCRIPT2 -m $model -k $TASK $dry_run_flag"
 }
 
 generate_r3_call() {
   local model=$1
   local dry_run_flag=$2
-  echo "Rscript $R_SCRIPT3 -m $model -k $TASK -g $GROUP_TYPE --n_trials \${n_trials} --RTbound_ms \${RTbound_ms} --rt_method \${rt_method} --n_warmup \${n_warmup} --n_iter \${n_iter} --n_chains \${n_chains} --adapt_delta \${adapt_delta} --max_treedepth \${max_treedepth} --check_iter ${CHECK_ITER} $dry_run_flag"
+  echo "Rscript $R_SCRIPT3 -m $model -k $TASK --n_trials \${n_trials} --RTbound_ms \${RTbound_ms} --rt_method \${rt_method} --n_warmup \${n_warmup} --n_iter \${n_iter} --n_chains \${n_chains} --adapt_delta \${adapt_delta} --max_treedepth \${max_treedepth} --check_iter ${CHECK_ITER} $dry_run_flag"
 }
 
 # Check model files and submit jobs
@@ -157,9 +160,12 @@ for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
     generate_r3_call $MODEL_NAME "--dry_run"
     
     # Actually run the R script in dry-run mode
-    source "${CONFIG_DIR}/fit_params_${FIT_CONFIG}.conf"
+    source "${CONFIG_DIR}/fit_params_emp_hier_${FIT_CONFIG}.conf"
     source "${CONFIG_DIR}/data_params_${DATA_CONFIG}.conf"
     eval $(generate_r_call $MODEL_NAME "--dry_run")
+    eval $(generate_r2_call $MODEL_NAME "--dry_run")
+    source "${CONFIG_DIR}/fit_params_emp_indiv_${FIT_CONFIG}.conf"
+    eval $(generate_r3_call $MODEL_NAME "--dry_run")
   else
     JOB_NAME="${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}"
     job_id=$(sbatch --parsable \

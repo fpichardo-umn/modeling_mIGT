@@ -141,7 +141,7 @@ if (!opt$dry_run) {
                             n_trials = opt$n_trials,
                             n_warmup = opt$n_warmup, n_iter = opt$n_iter, n_chains = opt$n_chains,
                             adapt_delta = opt$adapt_delta, max_treedepth = opt$max_treedepth,
-                            model_params = opt$params, checkpoint_interval = opt$check_iter,
+                            model_params = opt$params, checkpoint_interval = min(opt$check_iter, opt$n_warmup),
                             output_dir = DATA_RDS_eB_DIR, emp_bayes = T)
   
   # Check model diagnostics
