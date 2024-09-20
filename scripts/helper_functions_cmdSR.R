@@ -9,6 +9,70 @@ suppressPackageStartupMessages({
 })
 
 ## Functions
+# Function to load or generate subject IDs
+load_or_generate_subs <- function(subs_file, igt_data, risk_data, n_trials, debug = FALSE) {
+  if (!is.null(subs_file) && file.exists(subs_file)) {
+    # Load existing subject IDs
+    subs_df <- read.table(subs_file, header = TRUE, stringsAsFactors = FALSE)
+    cat("Loaded subject IDs from file:", subs_file, "\n")
+  } else {
+    if (is.null(subs_file)) {
+      subs_file <- file.path(DATA_SUBS_DIR, "subject_ids.txt")
+      if (file.exists(subs_file)){
+        subs_df <- read.table(subs_file, header = TRUE, stringsAsFactors = FALSE)
+        cat("Loaded subject IDs from file:", subs_file, "\n")
+      }
+    } else{
+      
+      # Identify shared subjects and merge relevant information
+      shared_subs <- intersect(unique(igt_data$sid), unique(risk_data$sid))
+      risk_shared_df <- risk_data[risk_data$sid %in% shared_subs,]
+      sid_to_grpid <- unique(igt_data[, c("sid", "grpid")])
+      risk_shared_df$grpid <- sid_to_grpid$grpid[match(risk_shared_df$sid, sid_to_grpid$sid)]
+      
+      # Create balanced strata
+      stratified_data <- create_balanced_strata(risk_shared_df)
+      
+      # Filter data for required number of trials
+      filtered_data <- igt_data %>%
+        dplyr::group_by(sid) %>%
+        filter(n() >= n_trials) %>%
+        slice(1:n_trials) %>%
+        ungroup()
+      
+      # Calculate proportions for splitting
+      n_total <- length(unique(filtered_data$sid))
+      p_hier <- 200 / n_total
+      p_train <- 0.8 - p_hier
+      
+      # Split the data
+      split_data <- stratified_split(stratified_data, c(p_hier, p_train, 0.2))
+      
+      subs_df <- split_data %>%
+        mutate(
+          set = case_when(
+            split == 1 ~ "hier",
+            split == 2 ~ "train",
+            split == 3 ~ "test"
+          ),
+          use = ifelse(set %in% c("hier", "train"), "training", "testing")
+        ) %>%
+        select(sid, set, use)
+      
+      if (debug) {
+        # Limit to a small number of subjects for debugging
+        subs_df <- subs_df %>% dplyr::group_by(set) %>% slice_head(n = 10) %>% ungroup()
+      }
+      
+      # Save the generated subject IDs
+      write.table(subs_df, file = subs_file, row.names = FALSE, sep = "\t", quote = FALSE)
+      cat("Generated and saved subject IDs to file:", subs_file, "\n")
+    }
+  }
+  
+  return(subs_df)
+}
+
 param_xfm = function(param){
   switch(param,
          "con" = {
