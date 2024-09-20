@@ -101,3 +101,29 @@ Chain 2 Iteration:  70 / 350 [ 20%]  (Sampling)
 Chain 2 Iteration: 105 / 350 [ 30%]  (Sampling) 
 Chain 2 Iteration: 140 / 350 [ 40%]  (Sampling) 
 Chain 2 Iteration: 175 / 350 [ 50%]  (Sampling) 
+Chain 2 Iteration: 210 / 350 [ 60%]  (Sampling) 
+Chain 2 Iteration: 245 / 350 [ 70%]  (Sampling) 
+Chain 2 Iteration: 280 / 350 [ 80%]  (Sampling) 
+Chain 2 Iteration: 315 / 350 [ 90%]  (Sampling) 
+Chain 2 Iteration: 350 / 350 [100%]  (Sampling) 
+Chain 2 finished in 18608.9 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 6321.9 seconds.
+Total execution time: 18609.5 seconds.
+
+Checkpoint saved at iteration 701 
+Running MCMC with 4 parallel chains...
+
+Chain 1 Iteration:   1 / 149 [  0%]  (Sampling) 
+Chain 3 Iteration:   1 / 149 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 149 [  0%]  (Sampling) 
+Chain 4 Iteration:   1 / 149 [  0%]  (Sampling) 
+Chain 4 Iteration:  15 / 149 [ 10%]  (Sampling) 
+Chain 1 Iteration:  15 / 149 [ 10%]  (Sampling) 
+Chain 3 Iteration:  15 / 149 [ 10%]  (Sampling) 
+Chain 4 Iteration:  30 / 149 [ 20%]  (Sampling) 
+Chain 4 Iteration:  45 / 149 [ 30%]  (Sampling) 
+Chain 1 Iteration:  30 / 149 [ 20%]  (Sampling) 
+Chain 3 Iteration:  30 / 149 [ 20%]  (Sampling) 
+Chain 4 Iteration:  60 / 149 [ 40%]  (Sampling) 

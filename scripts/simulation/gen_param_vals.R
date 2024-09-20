@@ -5,7 +5,7 @@ suppressPackageStartupMessages({
   library(here)
 })
 
-# Define parameter ranges for suggestion
+# Define parameter ranges
 PARAM_RANGES <- list(
   con = list(range = c(-2, 2), min = -2, max = 2, low = c(-2, -1), medium = c(-1, 1), high = c(1, 2)),
   wgt_pun = list(range = c(0, 1), min = 0, max = 1, low = c(0, 0.3), medium = c(0.3, 0.7), high = c(0.7, 1)),

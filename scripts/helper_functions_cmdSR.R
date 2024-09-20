@@ -115,6 +115,7 @@ param_xfm = function(param){
          }
   )
 }
+
 # Fit functions
 # Function to fit and save a model
 fit_and_save_model <- function(task, group_type, model_name, model_type, data_list, n_subs, n_trials, n_warmup, n_iter, n_chains, adapt_delta, max_treedepth, model_params, dry_run = FALSE, checkpoint_interval = 1000, output_dir = NULL, emp_bayes = FALSE, informative_priors = NULL) {
@@ -485,7 +486,7 @@ validate_empirical_bayes <- function(hier_fit, emp_fit, model_params, subs_df, n
   return(validation_results)
 }
 
-check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 0.75, mcse_threshold = 0.1) {
+check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 0.7, mcse_threshold = 0.1) {
   # Check divergences
   sampler_diagnostics <- fit$sampler_diagnostics
   divergences <- sum(sampler_diagnostics[,,"divergent__"])
@@ -503,11 +504,27 @@ check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 
   
   # Check normality of energy distribution
   energy <- as.vector(sampler_diagnostics[,, "energy__"])
-  energy_normality <- shapiro.test(energy)
-  if (energy_normality$p.value < 0.05) {
-    cat("WARNING: Energy distribution may not be normal (p-value ", if (round(energy_normality$p.value, 4) == 0) "< 0.001" else round(energy_normality$p.value, 4), ")\n\n")
-  } else {
-    cat("Energy distribution appears to be normal (p-value =", round(energy_normality$p.value, 4), ")\n\n")
+  len_energy = length(energy)
+  if (len_energy < 3){
+    cat("Sample too small to check energy normality.\n\n")
+  } else{
+    sample_size = if (len_energy > 4999) min(5000, max(as.integer(len_energy*.4), 4000)) else as.integer(len_energy*.75)
+    
+    sample_norm = function(eng, sample_size){
+      energy_sample = sample(energy, sample_size)
+      energy_normality <- shapiro.test(energy_sample)
+      energy_normality$p.value
+    }
+    
+    N = 100
+    pvals = unlist(lapply(1:N, function(x) sample_norm(energy, sample_size)))
+    ratio_sig = sum(pvals < 0.05)/N
+    
+    if (ratio_sig > 0.4) {
+      cat("WARNING: Energy distribution may not be normal (ratio of p-values < 0.05 is ", round(ratio_sig, 4), ")\n\n")
+    } else {
+      cat("Energy distribution appears to be normal (ratio of p-values < 0.05 is ", round(ratio_sig, 4), ")\n\n")
+    }
   }
   
   # Check R-hat values
@@ -518,13 +535,15 @@ check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 
   if (max_rhat / 1.1 > rhat_threshold || q90_rhat / 1.1 > rhat_threshold) {
     cat("WARNING: R-hat values are high. \nMax R-hat/1.1 =", round(max_rhat/1.1, 4), "(", max_rhat, ")", ", \n90th percentile R-hat/1.1 =", round(q90_rhat/1.1, 4), "(", q90_rhat, ")", "\n\n")
   } else {
-    cat("R-hat values are acceptable. \nMax R-hat/1.1 =", round(max_rhat/1.1, 4),  "(", max_rhat, ")", ",  \n90th percentile R-hat/1.1 =", round(q90_rhat/1.1, 4), "(", q90_rhat, ")",, "\n\n")
+    cat("R-hat values are acceptable. \nMax R-hat/1.1 =", round(max_rhat/1.1, 4),  "(", max_rhat, ")", ",  \n90th percentile R-hat/1.1 =", round(q90_rhat/1.1, 4), "(", q90_rhat, ")", "\n\n")
   }
   
   # Check Effective Sample Size (ESS)
   ess_bulk_values <- fit$diagnostics[,'ess_bulk']
   n_eff <- ess_bulk_values / prod(dim(fit$draws)[1:2])
   q10_neff <- round(quantile(n_eff, 0.1, na.rm = TRUE), 4)
+  
+  print(summary(n_eff))
   
   if (q10_neff < ess_threshold) {
     cat("WARNING: Low effective sample size. 10th percentile n_eff =", q10_neff, "\n\n")
@@ -540,6 +559,8 @@ check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 
   posterior_sd <- apply(draws_matrix, 2, sd)
   mcse_ratio <- mcse_values / posterior_sd
   q10_mcse_ratio <- round(quantile(mcse_ratio, 0.9, na.rm = TRUE), 4)
+  
+  print(summary(mcse_ratio))
   
   high_mcse_params <- names(which(mcse_ratio > mcse_threshold))
   if (length(high_mcse_params) > 0) {

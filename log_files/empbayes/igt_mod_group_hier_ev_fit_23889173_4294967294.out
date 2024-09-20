@@ -19,3 +19,182 @@ Chain 1 Iteration: 1206 / 2001 [ 60%]  (Warmup)
 Chain 2 Iteration: 1206 / 2001 [ 60%]  (Warmup) 
 Chain 1 Iteration: 1407 / 2001 [ 70%]  (Warmup) 
 Chain 2 Iteration: 1407 / 2001 [ 70%]  (Warmup) 
+Chain 1 Iteration: 1608 / 2001 [ 80%]  (Warmup) 
+Chain 2 Iteration: 1608 / 2001 [ 80%]  (Warmup) 
+Chain 1 Iteration: 1809 / 2001 [ 90%]  (Warmup) 
+Chain 2 Iteration: 1809 / 2001 [ 90%]  (Warmup) 
+Chain 1 Iteration: 2001 / 2001 [100%]  (Sampling) 
+Chain 1 finished in 1964.2 seconds.
+Chain 2 Iteration: 2001 / 2001 [100%]  (Sampling) 
+Chain 2 finished in 2060.6 seconds.
+
+Both chains finished successfully.
+Mean chain execution time: 2012.4 seconds.
+Total execution time: 2060.8 seconds.
+
+Checkpoint saved at iteration 2001 
+Running MCMC with 2 parallel chains...
+
+Chain 1 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 1 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 1 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 1 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 2 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 1 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 1 finished in 981.0 seconds.
+Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 2 finished in 1126.7 seconds.
+
+Both chains finished successfully.
+Mean chain execution time: 1053.8 seconds.
+Total execution time: 1127.0 seconds.
+
+Checkpoint saved at iteration 3001 
+Running MCMC with 2 parallel chains...
+
+Chain 1 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 1 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 1 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 1 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 2 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 1 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 1 finished in 1083.0 seconds.
+Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 2 finished in 1222.7 seconds.
+
+Both chains finished successfully.
+Mean chain execution time: 1152.9 seconds.
+Total execution time: 1223.0 seconds.
+
+Checkpoint saved at iteration 4001 
+Running MCMC with 2 parallel chains...
+
+Chain 1 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 1 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 1 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 1 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 2 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 1 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 1 finished in 1065.4 seconds.
+Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 2 finished in 1248.8 seconds.
+
+Both chains finished successfully.
+Mean chain execution time: 1157.1 seconds.
+Total execution time: 1249.1 seconds.
+
+Checkpoint saved at iteration 5001 
+Running MCMC with 2 parallel chains...
+
+Chain 1 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 1 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 1 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 1 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 2 Iteration: 400 / 1000 [ 40%]  (Sampling) 
+Chain 1 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 2 Iteration: 500 / 1000 [ 50%]  (Sampling) 
+Chain 1 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 2 Iteration: 600 / 1000 [ 60%]  (Sampling) 
+Chain 1 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 2 Iteration: 700 / 1000 [ 70%]  (Sampling) 
+Chain 1 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 2 Iteration: 800 / 1000 [ 80%]  (Sampling) 
+Chain 1 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 2 Iteration: 900 / 1000 [ 90%]  (Sampling) 
+Chain 1 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 1 finished in 1111.0 seconds.
+Chain 2 Iteration: 1000 / 1000 [100%]  (Sampling) 
+Chain 2 finished in 1152.2 seconds.
+
+Both chains finished successfully.
+Mean chain execution time: 1131.6 seconds.
+Total execution time: 1152.4 seconds.
+
+Checkpoint saved at iteration 6001 
+Running MCMC with 2 parallel chains...
+
+Chain 1 Iteration:   1 / 999 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 999 [  0%]  (Sampling) 
+Chain 1 Iteration: 100 / 999 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 999 [ 10%]  (Sampling) 
+Chain 1 Iteration: 200 / 999 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 999 [ 20%]  (Sampling) 
+Chain 1 Iteration: 300 / 999 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 999 [ 30%]  (Sampling) 
+Chain 1 Iteration: 400 / 999 [ 40%]  (Sampling) 
+Chain 2 Iteration: 400 / 999 [ 40%]  (Sampling) 
+Chain 1 Iteration: 500 / 999 [ 50%]  (Sampling) 
+Chain 2 Iteration: 500 / 999 [ 50%]  (Sampling) 
+Chain 1 Iteration: 600 / 999 [ 60%]  (Sampling) 
+Chain 2 Iteration: 600 / 999 [ 60%]  (Sampling) 
+Chain 1 Iteration: 700 / 999 [ 70%]  (Sampling) 
+Chain 2 Iteration: 700 / 999 [ 70%]  (Sampling) 
+Chain 1 Iteration: 800 / 999 [ 80%]  (Sampling) 
+Chain 2 Iteration: 800 / 999 [ 80%]  (Sampling) 
+Chain 1 Iteration: 900 / 999 [ 90%]  (Sampling) 
+Chain 2 Iteration: 900 / 999 [ 90%]  (Sampling) 
+Chain 1 Iteration: 999 / 999 [100%]  (Sampling) 
+Chain 1 finished in 1130.7 seconds.
+Chain 2 Iteration: 999 / 999 [100%]  (Sampling) 
+Chain 2 finished in 1179.3 seconds.
+
+Both chains finished successfully.
+Mean chain execution time: 1155.0 seconds.
+Total execution time: 1179.6 seconds.
+
+Checkpoint saved at iteration 7000 
+Extracting parameters
+Saving fitted model to: /users/7/fpichard/Projects/modeling_mIGT/Data/rds/empbayes/igt_mod_group_hier_ev_fit_desc-emp_output.rds 
+Divergence rate is acceptable ( 0 %)
+
+Error: Initial hierarchical model fit failed with exit code 1
