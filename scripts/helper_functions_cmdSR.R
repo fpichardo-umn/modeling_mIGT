@@ -9,6 +9,22 @@ suppressPackageStartupMessages({
 })
 
 ## Functions
+param_xfm = function(param){
+  switch(param,
+         "con" = {
+           function(x) plogis(x) * 4 -2
+         },
+         "wgt_pun" = {
+           function(x) plogis(x) * 4 -2
+         },
+         "wgt_rew" = {
+           function(x) plogis(x)
+         },
+         "update" = {
+           function(x) plogis(x) * 4 -2
+         }
+  )
+}
 # Fit functions
 # Function to fit and save a model
 fit_and_save_model <- function(task, group_type, model_name, model_type, data_list, n_subs, n_trials, n_warmup, n_iter, n_chains, adapt_delta, max_treedepth, model_params, dry_run = FALSE, checkpoint_interval = 1000, output_dir = NULL, emp_bayes = FALSE, informative_priors = NULL) {
@@ -54,8 +70,8 @@ fit_and_save_model <- function(task, group_type, model_name, model_type, data_li
   
   # Add informative priors to data_list if provided
   if (!is.null(informative_priors)) {
-    data_list$pr_mu <- sapply(model_params, function(param) informative_priors[[param]]["pr_mu"])
-    data_list$pr_sigma <- sapply(model_params, function(param) informative_priors[[param]]["pr_sigma"])
+    data_list$pr_mu <- unname(sapply(model_params, function(param) informative_priors[[param]][1]))
+    data_list$pr_sigma <- unname(sapply(model_params, function(param) informative_priors[[param]][2]))
   }
   
   # Check if there's a checkpoint to resume from
@@ -309,25 +325,52 @@ validate_empirical_bayes <- function(hier_fit, emp_fit, model_params, subs_df, n
   # Get subjects used in hierarchical fit
   hier_subs <- subs_df$sid[subs_df$set == "hier"]
   
+  # Get indices for hierarchical and empirical Bayes fits
+  hier_indices <- which(subs_df$set == "hier")
+  emp_indices <- which(subs_df$sid %in% hier_subs & subs_df$use == "training")
+  
   for (param in model_params) {
     # Extract subject-level parameters for both fits
     hier_params <- hier_fit$draws[,, grep(paste0(param, "_pr\\["), hier_fit$all_params)]
     emp_params <- emp_fit$draws[,, grep(paste0(param, "_pr\\["), emp_fit$all_params)]
     
     # Ensure we're comparing the same subjects
-    n_subjects <- min(ncol(hier_params), ncol(emp_params))
+    n_subjects <- length(hier_subs)
     
     # Sample from posterior distributions
-    sample_indices <- sample(nrow(hier_params), n_samples, replace = TRUE)
+    sample_indices <- sample(nrow(hier_params), ceiling(n_samples/2), replace = TRUE)
     
-    diffs <- matrix(nrow = n_samples, ncol = n_subjects)
+    diffs_pr <- matrix(nrow = ceiling(n_samples/2)*2, ncol = n_subjects)
+    diffs <- matrix(nrow = ceiling(n_samples/2)*2, ncol = n_subjects)
     for (i in 1:n_subjects) {
-      hier_samples <- hier_params[sample_indices, i]
-      emp_samples <- emp_params[sample_indices, i]
-      diffs[, i] <- emp_samples - hier_samples
+      hier_samples <- hier_params[sample_indices, , paste0(param, "_pr[", hier_indices[i], "]")]
+      emp_samples <- emp_params[sample_indices, , paste0(param, "_pr[", emp_indices[i], "]")]
+      diffs_pr[, i] <- as.vector(emp_samples - hier_samples)
+      
+      diffs[, i] <- as.vector(param_xfm(param)(emp_samples) - param_xfm(param)(hier_samples))
     }
     
     # Calculate summary statistics
+    validation_results[[paste0(param, "_pr")]] <- list(
+      mean_diff = colMeans(diffs_pr),
+      median_diff = apply(diffs_pr, 2, median),
+      sd_diff = apply(diffs_pr, 2, sd),
+      quantiles = t(apply(diffs_pr, 2, quantile, probs = c(0.025, 0.25, 0.75, 0.975)))
+    )
+    
+    # Create a density plot of differences
+    plot_data <- data.frame(diff = as.vector(diffs_pr))
+    p <- ggplot(plot_data, aes(x = diff)) +
+      geom_density(fill = "blue", alpha = 0.5) +
+      ggtitle(paste("Difference in", paste0(param, "_pr"), "estimates")) +
+      xlab("Empirical Bayes - Hierarchical") +
+      theme_minimal()
+    
+    validation_results[[paste0(param, "_pr")]]$plot <- p
+    
+    # Add subject IDs to results
+    validation_results[[paste0(param, "_pr")]]$subjects <- hier_subs[1:n_subjects]
+    
     validation_results[[param]] <- list(
       mean_diff = colMeans(diffs),
       median_diff = apply(diffs, 2, median),
@@ -637,7 +680,7 @@ extract_sample_data <- function(data, data_params, n_trials = NULL, n_subs = NUL
       ungroup()
     
     if (nrow(data) / n_trials > n_subs) {
-      selected_sids <- sample(unique(data$sid), n_subs)
+      selected_sids <- unique(data$sid)[1:n_subs]
       data <- data %>% filter(sid %in% selected_sids)
     }
   } else {

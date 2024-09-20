@@ -198,7 +198,7 @@ emp_fit <- fit_and_save_model(opt$task, opt$group, opt$model, "fit", data_list,
                               n_trials = opt$n_trials,
                               n_warmup = opt$n_warmup, n_iter = opt$n_iter, n_chains = opt$n_chains,
                               adapt_delta = opt$adapt_delta, max_treedepth = opt$max_treedepth,
-                              model_params = strsplit(opt$params, ",")[[1]],
+                              model_params = opt$params,
                               output_dir = DATA_RDS_eB_DIR, emp_bayes = TRUE,
                               informative_priors = informative_priors)
 
@@ -206,7 +206,7 @@ emp_fit <- fit_and_save_model(opt$task, opt$group, opt$model, "fit", data_list,
 emp_fit$empBayesdiagnostics <- check_model_diagnostics(emp_fit)
 
 # Load the original hierarchical fit for comparison
-hier_fit_file <- file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_desc-emp_hier_output.rds"))
+hier_fit_file <- file.path(DATA_RDS_eB_DIR, paste0(model_name_for_defaults, "_desc-emp_hier_output.rds"))
 hier_fit <- readRDS(hier_fit_file)
 
 # Validate empirical Bayes results
