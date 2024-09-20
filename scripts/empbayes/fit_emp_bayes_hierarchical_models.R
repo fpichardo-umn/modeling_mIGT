@@ -22,7 +22,6 @@ source(here("scripts", "helper_functions_cmdSR.R"))
 option_list = list(
   make_option(c("-m", "--model"), type="character", default=NULL, help="Model name"),
   make_option(c("-k", "--task"), type="character", default=NULL, help="Task name"),
-  make_option(c("-g", "--group"), type="character", default=NULL, help="Group type (sing, group, group_hier)"),
   make_option(c("-d", "--data"), type="character", default=NULL, help="Comma-separated list of data to extract"),
   make_option(c("-p", "--params"), type="character", default=NULL, help="Comma-separated list of model parameters"),
   make_option(c("--n_trials"), type="integer", default=120, help="Number of trials"),
@@ -35,18 +34,20 @@ option_list = list(
   make_option(c("--max_treedepth"), type="integer", default=12, help="Max tree depth"),
   make_option(c("--seed"), type="integer", default=29518, help="Set seed"),
   make_option(c("--subs_file"), type="character", default=NULL, help="Path to subject IDs file"),
-  make_option(c("--debug"), action="store_true", default=FALSE, help="Run in debug mode with reduced dataset and iterations")
+  make_option(c("--debug"), action="store_true", default=FALSE, help="Run in debug mode with reduced dataset and iterations"),
+  make_option(c("--dry_run"), action="store_true", default=FALSE, help="Perform a dry run without data processing or model fitting"),
+  make_option(c("--check_iter"), type="integer", default=1000, help="Iteration interval for checkpoint runs. Default: 1000")
 )
 
 opt_parser <- OptionParser(option_list=option_list)
 opt <- parse_args(opt_parser)
 
 # Check for required options
-if (is.null(opt$model) || is.null(opt$task) || is.null(opt$group)) {
-  stop("Please specify a model, task, and group type using the -m, -k, and -g options.")
+if (is.null(opt$model) || is.null(opt$task)) {
+  stop("Please specify a model and task using the -m and -k options.")
 }
 
-full_model_name <- paste(opt$task, opt$group, opt$model, sep="_")
+full_model_name <- paste(opt$task, "group_hier", opt$model, sep="_")
 
 # Set up directories
 PROJ_DIR <- here::here()
@@ -101,102 +102,72 @@ if (opt$debug) {
   opt$max_treedepth <- 8  # Reduced max_treedepth
 }
 
-# Function to load or generate subject IDs
-load_or_generate_subs <- function(subs_file, igt_data, risk_data, n_trials, debug = FALSE) {
-  if (!is.null(subs_file) && file.exists(subs_file)) {
-    # Load existing subject IDs
-    subs_df <- read.table(subs_file, header = TRUE, stringsAsFactors = FALSE)
-    cat("Loaded subject IDs from file:", subs_file, "\n")
-  } else {
-    # Identify shared subjects and merge relevant information
-    shared_subs <- intersect(unique(igt_data$sid), unique(risk_data$sid))
-    risk_shared_df <- risk_data[risk_data$sid %in% shared_subs,]
-    sid_to_grpid <- unique(igt_data[, c("sid", "grpid")])
-    risk_shared_df$grpid <- sid_to_grpid$grpid[match(risk_shared_df$sid, sid_to_grpid$sid)]
-    
-    # Create balanced strata
-    stratified_data <- create_balanced_strata(risk_shared_df)
-    
-    # Filter data for required number of trials
-    filtered_data <- igt_data %>%
-      dplyr::group_by(sid) %>%
-      filter(n() >= n_trials) %>%
-      slice(1:n_trials) %>%
-      ungroup()
-    
-    # Calculate proportions for splitting
-    n_total <- length(unique(filtered_data$sid))
-    p_hier <- 200 / n_total
-    p_train <- 0.8 - p_hier
-    
-    # Split the data
-    split_data <- stratified_split(stratified_data, c(p_hier, p_train, 0.2))
-    
-    subs_df <- split_data %>%
-      mutate(
-        set = case_when(
-          split == 1 ~ "hier",
-          split == 2 ~ "train",
-          split == 3 ~ "test"
-        ),
-        use = ifelse(set %in% c("hier", "train"), "training", "testing")
-      ) %>%
-      select(sid, set, use)
-    
-    # Save the generated subject IDs
-    if (is.null(subs_file)) {
-      subs_file <- file.path(DATA_SUBS_DIR, "subject_ids.txt")
-    }
-    write.table(subs_df, file = subs_file, row.names = FALSE, sep = "\t", quote = FALSE)
-    cat("Generated and saved subject IDs to file:", subs_file, "\n")
-  }
+
+if (!opt$dry_run) {
+  # Load data
+  wave1.igt.raw <- read.spss(file.path(SAFE_DATA_DIR, "modigt_data_Wave1.sav"), to.data.frame = TRUE)
+  wave1.risk.data <- read.spss(file.path(SAFE_DATA_DIR, "AHRB.P1W1_v11_AW_v2.sav"), to.data.frame = TRUE)
   
-  if (debug) {
-    # Limit to a small number of subjects for debugging
-    subs_df <- subs_df %>% dplyr::group_by(set) %>% slice_head(n = 10) %>% ungroup()
-  }
+  # Load or generate subject IDs
+  subs_df <- load_or_generate_subs(opt$subs_file, wave1.igt.raw, wave1.risk.data, opt$n_trials, opt$debug)
   
-  return(subs_df)
+  # Prepare data for Stan (using hierarchical subset)
+  hier_data <- wave1.igt.raw %>% 
+    filter(sid %in% subs_df$sid[subs_df$set == "hier"]) %>%
+    dplyr::group_by(sid) %>%
+    slice(1:opt$n_trials) %>%
+    ungroup()
+  
+  data_list <- extract_sample_data(hier_data, strsplit(opt$data, ",")[[1]], 
+                                   n_trials = opt$n_trials,
+                                   RTbound_ms = opt$RTbound_ms,
+                                   rt_method = opt$rt_method)
+} else {
+  cat("Dry run: Data would be loaded from", file.path(SAFE_DATA_DIR, "modigt_data_Wave1.sav"), 
+      "and", file.path(SAFE_DATA_DIR, "AHRB.P1W1_v11_AW_v2.sav"), "\n")
+  cat("Dry run: Subject IDs would be loaded or generated\n")
+  cat("Dry run: Data to extract:", opt$data, "\n")
+  data_list <- NULL
+  subs_df <- data.frame(set = c("hier", "train", "test"), 
+                        count = c(10, 10, 10))  # Dummy data for dry run
 }
 
-# Load data
-wave1.igt.raw <- read.spss(file.path(SAFE_DATA_DIR, "modigt_data_Wave1.sav"), to.data.frame = TRUE)
-wave1.risk.data <- read.spss(file.path(SAFE_DATA_DIR, "AHRB.P1W1_v11_AW_v2.sav"), to.data.frame = TRUE)
-
-# Load or generate subject IDs
-subs_df <- load_or_generate_subs(opt$subs_file, wave1.igt.raw, wave1.risk.data, opt$n_trials, opt$debug)
-
-# Prepare data for Stan (using hierarchical subset)
-hier_data <- wave1.igt.raw %>% 
-  filter(sid %in% subs_df$sid[subs_df$set == "hier"]) %>%
-  dplyr::group_by(sid) %>%
-  slice(1:opt$n_trials) %>%
-  ungroup()
-
-data_list <- extract_sample_data(hier_data, strsplit(opt$data, ",")[[1]], 
-                                 n_trials = opt$n_trials,
-                                 RTbound_ms = opt$RTbound_ms,
-                                 rt_method = opt$rt_method)
-
 # Fit the initial hierarchical model
-fit <- fit_and_save_model(opt$task, opt$group, opt$model, "fit", data_list, 
-                          n_subs = nrow(subs_df[subs_df$set == "hier",]), 
-                          n_trials = opt$n_trials,
-                          n_warmup = opt$n_warmup, n_iter = opt$n_iter, n_chains = opt$n_chains,
-                          adapt_delta = opt$adapt_delta, max_treedepth = opt$max_treedepth,
-                          model_params = opt$params,
-                          output_dir = DATA_RDS_eB_DIR, emp_bayes = T)
 
-# Check model diagnostics
-fit$empBayesdiagnostics <- check_model_diagnostics(fit)
+if (!opt$dry_run) {
+  # Fit the initial hierarchical model
+  fit <- fit_and_save_model(opt$task, "group_hier", opt$model, "fit", data_list, 
+                            n_subs = nrow(subs_df[subs_df$set == "hier",]), 
+                            n_trials = opt$n_trials,
+                            n_warmup = opt$n_warmup, n_iter = opt$n_iter, n_chains = opt$n_chains,
+                            adapt_delta = opt$adapt_delta, max_treedepth = opt$max_treedepth,
+                            model_params = opt$params, checkpoint_interval = opt$check_iter,
+                            output_dir = DATA_RDS_eB_DIR, emp_bayes = T)
+  
+  # Check model diagnostics
+  fit$empBayesdiagnostics <- check_model_diagnostics(fit)
+  
+  # Save the output with a descriptor
+  saveRDS(fit, file = file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_desc-emp_hier_output.rds")))
+  
+  # Print diagnostic results
+  cat("\nDiagnostic Results:\n")
+  cat("High R-hat parameters:", paste(fit$empBayesdiagnostics$high_rhat, collapse = ", "), "\n")
+  cat("Low ESS parameters:", paste(fit$empBayesdiagnostics$low_ess, collapse = ", "), "\n")
+  cat("High MCSE parameters:", paste(fit$empBayesdiagnostics$high_mcse, collapse = ", "), "\n")
+  
+  cat("\nInitial hierarchical model fit completed and saved.\n")
+} else {
+  fit_and_save_model(opt$task, "group_hier", opt$model, "fit", c(), 
+                     n_subs = "TBD", 
+                     n_trials = opt$n_trials,
+                     n_warmup = opt$n_warmup, n_iter = opt$n_iter, n_chains = opt$n_chains,
+                     adapt_delta = opt$adapt_delta, max_treedepth = opt$max_treedepth,
+                     model_params = opt$params, checkpoint_interval = opt$check_iter,
+                     output_dir = DATA_RDS_eB_DIR, emp_bayes = T,
+                     dry_run = T)
+  cat("\nDry run: Model diagnostics would be checked and results saved.\n")
+}
 
-# Save the output with a descriptor
-saveRDS(fit, file = file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_desc-emp_hier_output.rds")))
 
-# Print diagnostic results
-cat("\nDiagnostic Results:\n")
-cat("High R-hat parameters:", paste(fit$empBayesdiagnostics$high_rhat, collapse = ", "), "\n")
-cat("Low ESS parameters:", paste(fit$empBayesdiagnostics$low_ess, collapse = ", "), "\n")
-cat("High MCSE parameters:", paste(fit$empBayesdiagnostics$high_mcse, collapse = ", "), "\n")
-
-cat("\nInitial hierarchical model fit completed and saved.\n")
+cat("\nScript execution ", ifelse(opt$dry_run, "dry run ", ""), "completed.\n")

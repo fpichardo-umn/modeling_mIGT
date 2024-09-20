@@ -1,0 +1,9 @@
+Starting initial hierarchical model fit...
+Loaded subject IDs from file: /users/7/fpichard/Projects/modeling_mIGT/Data/txt/subs/subject_ids.txt 
+Fitting model: igt_mod_group_hier_ev 
+Running MCMC with 4 parallel chains...
+
+Chain 1 Iteration:    1 / 1001 [  0%]  (Warmup) 
+Chain 2 Iteration:    1 / 1001 [  0%]  (Warmup) 
+Chain 3 Iteration:    1 / 1001 [  0%]  (Warmup) 
+Chain 4 Iteration:    1 / 1001 [  0%]  (Warmup) 

@@ -46,7 +46,6 @@ echo "Starting initial hierarchical model fit..."
 Rscript ./scripts/empbayes/fit_emp_bayes_hierarchical_models.R \
   -m ${MODEL_NAME} \
   -k ${TASK} \
-  -g ${GROUP_TYPE} \
   --n_trials ${n_trials} \
   --RTbound_ms ${RTbound_ms} \
   --rt_method ${rt_method} \
@@ -55,6 +54,7 @@ Rscript ./scripts/empbayes/fit_emp_bayes_hierarchical_models.R \
   --n_chains ${n_chains} \
   --adapt_delta ${adapt_delta} \
   --max_treedepth ${max_treedepth} \
+  --check_iter ${CHECK_ITER} \
   --seed ${SLURM_JOB_ID}
 
 check_status $? "Initial hierarchical model fit"
@@ -64,7 +64,6 @@ echo "Generating informative priors..."
 Rscript ./scripts/empbayes/generate_informative_priors.R \
   -m ${MODEL_NAME} \
   -k ${TASK} \
-  -g ${GROUP_TYPE} \
   --seed ${SLURM_JOB_ID} \
   --verbose
 
@@ -75,7 +74,6 @@ echo "Starting full empirical Bayes model fit..."
 Rscript ./scripts/empbayes/fit_emp_bayes_group_models.R \
   -m ${MODEL_NAME} \
   -k ${TASK} \
-  -g ${GROUP_TYPE} \
   --n_trials ${n_trials} \
   --RTbound_ms ${RTbound_ms} \
   --rt_method ${rt_method} \
@@ -84,6 +82,7 @@ Rscript ./scripts/empbayes/fit_emp_bayes_group_models.R \
   --n_chains ${n_chains} \
   --adapt_delta ${adapt_delta} \
   --max_treedepth ${max_treedepth} \
+  --check_iter ${CHECK_ITER} \
   --seed ${SLURM_JOB_ID}
 
 check_status $? "Full empirical Bayes model fit"
