@@ -127,3 +127,52 @@ Chain 4 Iteration:  45 / 149 [ 30%]  (Sampling)
 Chain 1 Iteration:  30 / 149 [ 20%]  (Sampling) 
 Chain 3 Iteration:  30 / 149 [ 20%]  (Sampling) 
 Chain 4 Iteration:  60 / 149 [ 40%]  (Sampling) 
+Chain 4 Iteration:  75 / 149 [ 50%]  (Sampling) 
+Chain 1 Iteration:  45 / 149 [ 30%]  (Sampling) 
+Chain 3 Iteration:  45 / 149 [ 30%]  (Sampling) 
+Chain 4 Iteration:  90 / 149 [ 60%]  (Sampling) 
+Chain 4 Iteration: 105 / 149 [ 70%]  (Sampling) 
+Chain 1 Iteration:  60 / 149 [ 40%]  (Sampling) 
+Chain 3 Iteration:  60 / 149 [ 40%]  (Sampling) 
+Chain 4 Iteration: 120 / 149 [ 80%]  (Sampling) 
+Chain 4 Iteration: 135 / 149 [ 90%]  (Sampling) 
+Chain 1 Iteration:  75 / 149 [ 50%]  (Sampling) 
+Chain 3 Iteration:  75 / 149 [ 50%]  (Sampling) 
+Chain 4 Iteration: 149 / 149 [100%]  (Sampling) 
+Chain 4 finished in 590.6 seconds.
+Chain 2 Iteration:  15 / 149 [ 10%]  (Sampling) 
+Chain 1 Iteration:  90 / 149 [ 60%]  (Sampling) 
+Chain 3 Iteration:  90 / 149 [ 60%]  (Sampling) 
+Chain 1 Iteration: 105 / 149 [ 70%]  (Sampling) 
+Chain 3 Iteration: 105 / 149 [ 70%]  (Sampling) 
+Chain 1 Iteration: 120 / 149 [ 80%]  (Sampling) 
+Chain 3 Iteration: 120 / 149 [ 80%]  (Sampling) 
+Chain 1 Iteration: 135 / 149 [ 90%]  (Sampling) 
+Chain 3 Iteration: 135 / 149 [ 90%]  (Sampling) 
+Chain 1 Iteration: 149 / 149 [100%]  (Sampling) 
+Chain 1 finished in 1096.6 seconds.
+Chain 3 Iteration: 149 / 149 [100%]  (Sampling) 
+Chain 3 finished in 1116.7 seconds.
+Chain 2 Iteration:  30 / 149 [ 20%]  (Sampling) 
+Chain 2 Iteration:  45 / 149 [ 30%]  (Sampling) 
+Chain 2 Iteration:  60 / 149 [ 40%]  (Sampling) 
+Chain 2 Iteration:  75 / 149 [ 50%]  (Sampling) 
+Chain 2 Iteration:  90 / 149 [ 60%]  (Sampling) 
+Chain 2 Iteration: 105 / 149 [ 70%]  (Sampling) 
+Chain 2 Iteration: 120 / 149 [ 80%]  (Sampling) 
+Chain 2 Iteration: 135 / 149 [ 90%]  (Sampling) 
+Chain 2 Iteration: 149 / 149 [100%]  (Sampling) 
+Chain 2 finished in 7868.6 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 2668.1 seconds.
+Total execution time: 7869.4 seconds.
+
+Checkpoint saved at iteration 850 
+Extracting parameters
+Saving fitted model to: /users/7/fpichard/Projects/modeling_mIGT/Data/rds/empbayes/igt_mod_group_hier_ev_ddm_fit_desc-emp_output.rds 
+Divergence rate is acceptable ( 0 %)
+
+Energy distribution appears to be normal (p-value = 0.5812 )
+
+Error: Initial hierarchical model fit failed with exit code 1

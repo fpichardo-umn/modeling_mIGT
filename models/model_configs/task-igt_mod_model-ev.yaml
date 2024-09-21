@@ -1,0 +1,16 @@
+model_id: "ev"
+knowledge:
+  - type: "expected_value"
+    dim: 4  # Number of decks
+
+parameters:
+  - name: "con"
+  - name: "update"
+  - name: "wgt_pun"
+  - name: "wgt_rew"
+
+rules:
+  utility: "util_linear_2p"
+  learning: "delta_bal_1p"
+  decision: "bernoulli_logistic"
+  sensitivity: "con_tdc_info"

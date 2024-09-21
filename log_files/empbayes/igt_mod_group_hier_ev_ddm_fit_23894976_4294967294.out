@@ -1,0 +1,6 @@
+Starting full empirical Bayes model fit...
+Loaded subject IDs from file: /users/7/fpichard/Projects/modeling_mIGT/Data/txt/subs/subject_ids.txt 
+Fitting model: igt_mod_group_emp_ev_ddm 
+Running MCMC with 4 parallel chains...
+
+Error: Full empirical Bayes model fit failed with exit code 1

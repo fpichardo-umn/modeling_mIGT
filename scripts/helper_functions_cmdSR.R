@@ -532,6 +532,8 @@ check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 
   max_rhat <- round(max(rhat_values, na.rm = TRUE), 4)
   q90_rhat <- round(quantile(rhat_values, 0.9, na.rm = TRUE), 4)
   
+  cat("R-hat diagnostics:\n")
+  print(summary(rhat_values))
   if (max_rhat / 1.1 > rhat_threshold || q90_rhat / 1.1 > rhat_threshold) {
     cat("WARNING: R-hat values are high. \nMax R-hat/1.1 =", round(max_rhat/1.1, 4), "(", max_rhat, ")", ", \n90th percentile R-hat/1.1 =", round(q90_rhat/1.1, 4), "(", q90_rhat, ")", "\n\n")
   } else {
@@ -543,12 +545,14 @@ check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 
   n_eff <- ess_bulk_values / prod(dim(fit$draws)[1:2])
   q10_neff <- round(quantile(n_eff, 0.1, na.rm = TRUE), 4)
   
+  cat("ESS diagnostics:\n")
   print(summary(n_eff))
-  
   if (q10_neff < ess_threshold) {
-    cat("WARNING: Low effective sample size. 10th percentile n_eff =", q10_neff, "\n\n")
+    cat("WARNING: Low effective sample size. 10th percentile n_eff =", q10_neff, "\n")
     low_ess_params <- names(which(n_eff < ess_threshold))
-    cat("Parameters with n_eff <", ess_threshold, ":", paste(low_ess_params, collapse = ", "), "\n\n")
+    len_low_ess_params = length(low_ess_params)
+    cat("Sample of parameters with n_eff <", ess_threshold, ":", paste(sample(low_ess_params, 10), collapse = ", "), "\n\n")
+    cat(len_low_ess_params, "parameters (", round(len_low_ess_params/dim(fit$draws)[3], 3), ")\n\n")
   } else {
     cat("Effective sample sizes are acceptable. 10th percentile n_eff =", q10_neff, "\n\n")
   }
@@ -560,12 +564,13 @@ check_model_diagnostics <- function(fit, rhat_threshold = 0.93, ess_threshold = 
   mcse_ratio <- mcse_values / posterior_sd
   q10_mcse_ratio <- round(quantile(mcse_ratio, 0.9, na.rm = TRUE), 4)
   
+  cat("MCSE diagnostics:\n")
   print(summary(mcse_ratio))
-  
   high_mcse_params <- names(which(mcse_ratio > mcse_threshold))
+  len_high_mcse_params = length(high_mcse_params)
   if (length(high_mcse_params) > 0) {
     cat("WARNING: High MCSE. 90th percentile MCSE ration =", q10_mcse_ratio, "\n\n")
-    cat("Parameters with MCSE ratio >", mcse_threshold, ":", paste(high_mcse_params, collapse = ", "), "\n\n")
+    cat("Sample of parameters with MCSE ratio >", mcse_threshold, " (", len_high_mcse_params, "):", paste(sample(high_mcse_params, 10), collapse = ", "), "\n\n")
   } else {
     cat("MCSE values are acceptable for all parameters. 10th percentile ratio =", q10_mcse_ratio, "\n\n")
   }

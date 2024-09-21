@@ -13,6 +13,7 @@ print_usage() {
   echo "  -d    Data parameters config name (default: default)"
   echo "  -k    Task name (e.g., igt_mod)"
   echo "  -c    Number of iterations for checkpoint runs (default: 1000)"
+  echo "  -s    Steps to run (default: "1,2,3", options: "1", "2", "3", "1,2", "2,3", or any combination)"
   echo "  -e    Your email address (required)"
   echo "  -n    Dry run (optional)"
   exit 1
@@ -20,7 +21,7 @@ print_usage() {
 
 # Parse command line arguments
 DRY_RUN=false
-while getopts ":m:f:d:e:k:g:n" opt; do
+while getopts ":m:f:d:e:k:g:s:n" opt; do
   case $opt in
     m) MODEL_NAMES=$OPTARG ;;
     f) FIT_CONFIG=$OPTARG ;;
@@ -28,6 +29,7 @@ while getopts ":m:f:d:e:k:g:n" opt; do
     k) TASK=$OPTARG ;;
     c) CHECK_ITER=$OPTARG ;;
     e) USER_EMAIL=$OPTARG ;;
+    s) STEPS=$OPTARG ;;
     n) DRY_RUN=true ;;
     \?) echo "Invalid option -$OPTARG" >&2; print_usage ;;
   esac
@@ -45,6 +47,12 @@ FIT_CONFIG=${FIT_CONFIG:-simple}
 DATA_CONFIG=${DATA_CONFIG:-default}
 MODEL_TYPE=${MODEL_TYPE:-fit}
 CHECK_ITER=${CHECK_ITER:-1000}
+STEPS=${STEPS:-"1,2,3"}
+
+if ! [[ $STEPS =~ ^[1-3](,[1-3]){0,2}$ ]]; then
+  echo "Error: Invalid steps specified. Use a comma-separated list of 1, 2, and/or 3."
+  exit 1
+fi
 
 # Directory checks
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
@@ -170,7 +178,7 @@ for MODEL_NAME in "${MODEL_ARRAY[@]}"; do
     JOB_NAME="${TASK}_${GROUP_TYPE}_${MODEL_NAME}_${MODEL_TYPE}"
     job_id=$(sbatch --parsable \
       --job-name=$JOB_NAME \
-      --export=ALL,JOB_NAME=$JOB_NAME,MODEL_NAME=$MODEL_NAME,FIT_CONFIG=$FIT_CONFIG,DATA_CONFIG=$DATA_CONFIG,USER_EMAIL=$USER_EMAIL,MODEL_TYPE=$MODEL_TYPE,TASK=$TASK,GROUP_TYPE=$GROUP_TYPE,CHECK_ITER=$CHECK_ITER \
+      --export=ALL,JOB_NAME=$JOB_NAME,MODEL_NAME=$MODEL_NAME,FIT_CONFIG=$FIT_CONFIG,DATA_CONFIG=$DATA_CONFIG,USER_EMAIL=$USER_EMAIL,MODEL_TYPE=$MODEL_TYPE,TASK=$TASK,GROUP_TYPE=$GROUP_TYPE,CHECK_ITER=$CHECK_ITER,STEPS=$STEPS \
       $SBATCH_SCRIPT)
     if [ $? -eq 0 ]; then
       echo "Submitted job for model $MODEL_NAME with ID: $job_id"

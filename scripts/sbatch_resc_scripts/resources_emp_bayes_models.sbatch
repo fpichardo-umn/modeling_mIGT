@@ -18,6 +18,19 @@ fi
 
 #SBATCH --mail-user=$USER_EMAIL
 
+# Convert STEPS string to array
+IFS=',' read -ra STEP_ARRAY <<< "$STEPS"
+
+# Function to check if a step should be run
+should_run_step() {
+  for step in "${STEP_ARRAY[@]}"; do
+    if [ "$step" = "$1" ]; then
+      return 0  # Return true (0 in bash) if the step is found
+    fi
+  done
+  return 1  # Return false (1 in bash) if the step is not found
+}
+
 # Load necessary modules
 module load R/4.2.0-rocky8
 module load gcc/13.1.0-mptekim
@@ -42,52 +55,53 @@ check_status() {
 }
 
 # Step 1: Run initial hierarchical model
-echo "Starting initial hierarchical model fit..."
-Rscript ./scripts/empbayes/fit_emp_bayes_hierarchical_models.R \
-  -m ${MODEL_NAME} \
-  -k ${TASK} \
-  --n_trials ${n_trials} \
-  --RTbound_ms ${RTbound_ms} \
-  --rt_method ${rt_method} \
-  --n_warmup ${n_warmup} \
-  --n_iter ${n_iter} \
-  --n_chains ${n_chains} \
-  --adapt_delta ${adapt_delta} \
-  --max_treedepth ${max_treedepth} \
-  --check_iter ${CHECK_ITER} \
-  --seed ${SLURM_JOB_ID}
-
-check_status $? "Initial hierarchical model fit"
+if should_run_step 1; then
+  echo "Starting initial hierarchical model fit..."
+  Rscript ./scripts/empbayes/fit_emp_bayes_hierarchical_models.R \
+    -m ${MODEL_NAME} \
+    -k ${TASK} \
+    --n_trials ${n_trials} \
+    --RTbound_ms ${RTbound_ms} \
+    --rt_method ${rt_method} \
+    --n_warmup ${n_warmup} \
+    --n_iter ${n_iter} \
+    --n_chains ${n_chains} \
+    --adapt_delta ${adapt_delta} \
+    --max_treedepth ${max_treedepth} \
+    --check_iter ${CHECK_ITER} \
+    --seed ${SLURM_JOB_ID}
+  check_status $? "Initial hierarchical model fit"
+fi
 
 # Step 2: Generate informative priors
-echo "Generating informative priors..."
-Rscript ./scripts/empbayes/generate_informative_priors.R \
-  -m ${MODEL_NAME} \
-  -k ${TASK} \
-  --seed ${SLURM_JOB_ID} \
-  --verbose
-
-check_status $? "Generating informative priors"
-
-# Source the config files
-source ./scripts/configs/fit_params_emp_indiv_${FIT_CONFIG}.conf
+if should_run_step 2; then
+  echo "Generating informative priors..."
+  Rscript ./scripts/empbayes/generate_informative_priors.R \
+    -m ${MODEL_NAME} \
+    -k ${TASK} \
+    --seed ${SLURM_JOB_ID} \
+    --verbose
+  check_status $? "Generating informative priors"
+fi
 
 # Step 3: Run full empirical Bayes model
-echo "Starting full empirical Bayes model fit..."
-Rscript ./scripts/empbayes/fit_emp_bayes_group_models.R \
-  -m ${MODEL_NAME} \
-  -k ${TASK} \
-  --n_trials ${n_trials} \
-  --RTbound_ms ${RTbound_ms} \
-  --rt_method ${rt_method} \
-  --n_warmup ${n_warmup} \
-  --n_iter ${n_iter} \
-  --n_chains ${n_chains} \
-  --adapt_delta ${adapt_delta} \
-  --max_treedepth ${max_treedepth} \
-  --check_iter ${CHECK_ITER} \
-  --seed ${SLURM_JOB_ID}
-
-check_status $? "Full empirical Bayes model fit"
-
-  echo "Empirical Bayes process completed successfully"
+if should_run_step 3; then
+  echo "Starting full empirical Bayes model fit..."
+  # Source the config files
+  source ./scripts/configs/fit_params_emp_indiv_${FIT_CONFIG}.conf
+  
+  Rscript ./scripts/empbayes/fit_emp_bayes_group_models.R \
+    -m ${MODEL_NAME} \
+    -k ${TASK} \
+    --n_trials ${n_trials} \
+    --RTbound_ms ${RTbound_ms} \
+    --rt_method ${rt_method} \
+    --n_warmup ${n_warmup} \
+    --n_iter ${n_iter} \
+    --n_chains ${n_chains} \
+    --adapt_delta ${adapt_delta} \
+    --max_treedepth ${max_treedepth} \
+    --check_iter ${CHECK_ITER} \
+    --seed ${SLURM_JOB_ID}
+  check_status $? "Full empirical Bayes model fit"
+fi

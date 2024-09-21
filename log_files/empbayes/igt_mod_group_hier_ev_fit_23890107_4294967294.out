@@ -1,0 +1,66 @@
+Generating informative priors...
+Generating informative priors...
+
+Fitting truncnorm to con 
+
+Init values (mean, sd, lower, upper): 2.162769 3.628525 -16.1003 19.19403 
+sann objective function values
+initial       value 4560032.000723
+final         value 4113567.121899
+sann stopped after 4999 iterations
+[1]   0.01339555   4.98142272 -25.07050228  24.72663070
+
+Followup fit with BFGS...
+initial  value 4113567.121899 
+final  value 4113566.910965 
+converged
+[1]   0.01562723   4.98147104 -25.00253428  24.62760088
+
+Fitting truncnorm to wgt_pun 
+
+Init values (mean, sd, lower, upper): 2.893149 2.624688 -18.71492 24.05636 
+sann objective function values
+initial       value 5834960.007981
+final         value 4112394.709095
+sann stopped after 4999 iterations
+[1]  9.841026e-04  4.973923e+00 -2.725227e+01  2.624428e+01
+
+Followup fit with BFGS...
+initial  value 4112394.709095 
+final  value 4112393.606660 
+converged
+[1]  -0.003098006   4.977250357 -27.174219868  26.005837447
+
+Fitting truncnorm to wgt_rew 
+
+Init values (mean, sd, lower, upper): -3.916342 3.912613 -10.17477 12.43205 
+sann objective function values
+initial       value 6003323.149695
+final         value 4115783.678067
+sann stopped after 4999 iterations
+[1]   0.07550355   4.99390800 -24.14601620  24.01300937
+
+Followup fit with BFGS...
+initial  value 4115783.678067 
+final  value 4115782.605745 
+converged
+[1]   0.07596019   4.98968489 -24.11216927  23.96841622
+
+Fitting truncnorm to update 
+
+Init values (mean, sd, lower, upper): -4.451246 3.529337 -15.88871 18.95496 
+sann objective function values
+initial       value 5424940.845445
+final         value 4112281.850317
+sann stopped after 4999 iterations
+[1]  -0.006524234   4.976243338 -23.766782615  24.640892857
+
+Followup fit with BFGS...
+initial  value 4112281.850317 
+final  value 4112281.166436 
+converged
+[1]  -0.001709464   4.976818660 -23.747069118  24.632552456
+Informative priors saved to: /users/7/fpichard/Projects/modeling_mIGT/Data/txt/empbayes/igt_mod_group_hier_ev_informative_priors.txt 
+Informative priors generation completed.
+Informative priors generation   completed.
+Generating informative priors completed successfully

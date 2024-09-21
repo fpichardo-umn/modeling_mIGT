@@ -150,11 +150,21 @@ if (!opt$dry_run) {
   # Save the output with a descriptor
   saveRDS(fit, file = file.path(DATA_RDS_eB_DIR, paste0(full_model_name, "_desc-emp_hier_output.rds")))
   
-  # Print diagnostic results
-  cat("\nDiagnostic Results:\n")
-  cat("High R-hat parameters:", paste(fit$empBayesdiagnostics$high_rhat, collapse = ", "), "\n")
-  cat("Low ESS parameters:", paste(fit$empBayesdiagnostics$low_ess, collapse = ", "), "\n")
-  cat("High MCSE parameters:", paste(fit$empBayesdiagnostics$high_mcse, collapse = ", "), "\n")
+  print_none = function(ll){
+    if (length(ll) > 0){
+      print(table(gsub("\\[\\d+\\]", "", ll)))
+    } else {
+      print("None")
+    }
+  }
+  cat("High R-hat parameters:", "\n")
+  print_none(fit$empBayesdiagnostics$high_rhat)
+  
+  cat("Low ESS parameters:", "\n")
+  print_none(fit$empBayesdiagnostics$low_ess)
+  
+  cat("High MCSE parameters:", "\n")
+  print_none(fit$empBayesdiagnostics$high_mcse)
   
   cat("\nInitial hierarchical model fit completed and saved.\n")
 } else {

@@ -1,0 +1,77 @@
+Starting full empirical Bayes model fit...
+Loaded subject IDs from file: /users/7/fpichard/Projects/modeling_mIGT/Data/txt/subs/subject_ids.txt 
+Fitting model: igt_mod_group_emp_ev 
+Running MCMC with 4 parallel chains...
+
+Chain 2 Iteration:    1 / 1001 [  0%]  (Warmup) 
+Chain 1 Iteration:    1 / 1001 [  0%]  (Warmup) 
+Chain 3 Iteration:    1 / 1001 [  0%]  (Warmup) 
+Chain 4 Iteration:    1 / 1001 [  0%]  (Warmup) 
+Chain 2 Iteration:  101 / 1001 [ 10%]  (Warmup) 
+Chain 3 Iteration:  101 / 1001 [ 10%]  (Warmup) 
+Chain 1 Iteration:  101 / 1001 [ 10%]  (Warmup) 
+Chain 4 Iteration:  101 / 1001 [ 10%]  (Warmup) 
+Chain 2 Iteration:  202 / 1001 [ 20%]  (Warmup) 
+Chain 3 Iteration:  202 / 1001 [ 20%]  (Warmup) 
+Chain 1 Iteration:  202 / 1001 [ 20%]  (Warmup) 
+Chain 4 Iteration:  202 / 1001 [ 20%]  (Warmup) 
+Chain 2 Iteration:  303 / 1001 [ 30%]  (Warmup) 
+Chain 3 Iteration:  303 / 1001 [ 30%]  (Warmup) 
+Chain 4 Iteration:  303 / 1001 [ 30%]  (Warmup) 
+Chain 1 Iteration:  303 / 1001 [ 30%]  (Warmup) 
+Chain 2 Iteration:  404 / 1001 [ 40%]  (Warmup) 
+Chain 4 Iteration:  404 / 1001 [ 40%]  (Warmup) 
+Chain 1 Iteration:  404 / 1001 [ 40%]  (Warmup) 
+Chain 3 Iteration:  404 / 1001 [ 40%]  (Warmup) 
+Chain 2 Iteration:  505 / 1001 [ 50%]  (Warmup) 
+Chain 4 Iteration:  505 / 1001 [ 50%]  (Warmup) 
+Chain 1 Iteration:  505 / 1001 [ 50%]  (Warmup) 
+Chain 3 Iteration:  505 / 1001 [ 50%]  (Warmup) 
+Chain 2 Iteration:  606 / 1001 [ 60%]  (Warmup) 
+Chain 4 Iteration:  606 / 1001 [ 60%]  (Warmup) 
+Chain 3 Iteration:  606 / 1001 [ 60%]  (Warmup) 
+Chain 1 Iteration:  606 / 1001 [ 60%]  (Warmup) 
+Chain 2 Iteration:  707 / 1001 [ 70%]  (Warmup) 
+Chain 4 Iteration:  707 / 1001 [ 70%]  (Warmup) 
+Chain 3 Iteration:  707 / 1001 [ 70%]  (Warmup) 
+Chain 1 Iteration:  707 / 1001 [ 70%]  (Warmup) 
+Chain 2 Iteration:  808 / 1001 [ 80%]  (Warmup) 
+Chain 4 Iteration:  808 / 1001 [ 80%]  (Warmup) 
+Chain 3 Iteration:  808 / 1001 [ 80%]  (Warmup) 
+Chain 1 Iteration:  808 / 1001 [ 80%]  (Warmup) 
+Chain 2 Iteration:  909 / 1001 [ 90%]  (Warmup) 
+Chain 4 Iteration:  909 / 1001 [ 90%]  (Warmup) 
+Chain 3 Iteration:  909 / 1001 [ 90%]  (Warmup) 
+Chain 1 Iteration:  909 / 1001 [ 90%]  (Warmup) 
+Chain 2 Iteration: 1001 / 1001 [100%]  (Sampling) 
+Chain 2 finished in 19408.5 seconds.
+Chain 4 Iteration: 1001 / 1001 [100%]  (Sampling) 
+Chain 4 finished in 19520.7 seconds.
+Chain 3 Iteration: 1001 / 1001 [100%]  (Sampling) 
+Chain 3 finished in 19727.7 seconds.
+Chain 1 Iteration: 1001 / 1001 [100%]  (Sampling) 
+Chain 1 finished in 19931.0 seconds.
+
+All 4 chains finished successfully.
+Mean chain execution time: 19647.0 seconds.
+Total execution time: 19932.0 seconds.
+
+Checkpoint saved at iteration 1001 
+Running MCMC with 4 parallel chains...
+
+Chain 1 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 3 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 2 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 4 Iteration:   1 / 1000 [  0%]  (Sampling) 
+Chain 1 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 3 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 2 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 4 Iteration: 100 / 1000 [ 10%]  (Sampling) 
+Chain 1 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 3 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 2 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 4 Iteration: 200 / 1000 [ 20%]  (Sampling) 
+Chain 3 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 1 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 2 Iteration: 300 / 1000 [ 30%]  (Sampling) 
+Chain 4 Iteration: 300 / 1000 [ 30%]  (Sampling) 

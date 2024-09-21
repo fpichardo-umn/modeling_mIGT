@@ -18,3 +18,9 @@ Chain 3   Stan can't start sampling from this initial value.
 Chain 3 Rejecting initial value:
 Chain 3   Log probability evaluates to log(0), i.e. negative infinity.
 Chain 3   Stan can't start sampling from this initial value.
+Error in cat("R-hat values are acceptable. \nMax R-hat/1.1 =", round(max_rhat/1.1,  : 
+  argument is missing, with no default
+Calls: check_model_diagnostics -> cat
+In addition: Warning message:
+E-BFMI not computed because it is undefined for posterior chains of length less than 3. 
+Execution halted
