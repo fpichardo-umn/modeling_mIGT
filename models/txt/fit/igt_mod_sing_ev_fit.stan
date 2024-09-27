@@ -79,7 +79,7 @@ model {
 
   ev = igt_model_lp(
 		choice, shown, outcome,
-		T, ev, sensitivity,
+		ev, T, sensitivity,
 		update, wgt_pun, wgt_rew
 		);
 }
